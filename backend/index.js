@@ -1,33 +1,50 @@
+"use strict";
 require("reflect-metadata");
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const AppDataSource = require("./src/config/data-source");
 
-dotenv.config();
+// configEnv DEBE cargarse primero: valida y exporta todas las variables de entorno.
+// Si alguna falta, el proceso termina aquí con un mensaje claro.
+const { HOST, PORT } = require("./src/config/configEnv");
+const { AppDataSource } = require("./src/config/configDb");
+const { seedDatabase }  = require("./src/config/seeds");
+
+const express = require("express");
+const cors    = require("cors");
+
+// Inicializar Passport (registra la estrategia JWT)
+require("./src/auth/passport.auth");
+
+const apiRouter = require("./src/routes");
 
 const app = express();
-const PORT = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(express.json());
 
-// Health Check route
+// Rutas principales de la API
+app.use("/api", apiRouter);
+
+// Health check
 app.get("/", (req, res) => {
     res.json({
-        message: "NutriOne-ERP API is running successfully!",
-        db_status: AppDataSource.isInitialized ? "connected" : "disconnected"
+        message:   "NutriOne-ERP API corriendo correctamente.",
+        db_status: AppDataSource.isInitialized ? "conectada" : "desconectada",
+        host:      HOST,
+        port:      PORT,
     });
 });
 
-// Initialize Database Connection and start server
+// Inicializar base de datos y levantar servidor
 AppDataSource.initialize()
-    .then(() => {
-        console.log("Data Source has been initialized successfully!");
-        app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
+    .then(async () => {
+        console.log("=> Conexión exitosa a la base de datos!");
+
+        await seedDatabase(AppDataSource);
+
+        app.listen(PORT, HOST, () => {
+            console.log(`=> Servidor corriendo en http://${HOST}:${PORT}`);
         });
     })
     .catch((err) => {
-        console.error("Error during Data Source initialization:", err);
+        console.error("[FATAL] Error al inicializar la base de datos:", err.message);
+        process.exit(1);
     });
