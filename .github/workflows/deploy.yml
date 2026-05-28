@@ -45,7 +45,7 @@ jobs:
         run: |
           echo "Copiando .env temporales a /tmp del servidor"
 
-          sshpass "Copiando .env temporales a /tmp -p "$PROD_PASSWORD" scp \
+          sshpass -p "$PROD_PASSWORD" scp \
             -o StrictHostKeyChecking=no \
             -P "$PROD_PORT" \
             /dev/shm/frontend.env.tmp "$PROD_USER@$PROD_HOST:/tmp/nutrione_frontend.env.tmp"
@@ -67,12 +67,12 @@ jobs:
           export APP_DIR_REMOTE="/home/$PROD_USER/$REMOTE_REPO_NAME"
 
           expect <<'EOF'
-            set timeout 60
+            set timeout 90
 
             spawn ssh -tt -o StrictHostKeyChecking=no -p $env(PROD_PORT) $env(PROD_USER)@$env(PROD_HOST)
 
             expect {
-              -re "(?i)password:" {
+              -re "(?i)(password|contraseña|clave).*:" {
                 send -- "$env(PROD_PASSWORD)\r"
               }
               timeout {
@@ -82,8 +82,8 @@ jobs:
             }
 
             expect {
-              -re {[$] } {}
-              -re {[$]} {}
+              -re {[$] ?$} {}
+              -re {> ?$} {}
               timeout {
                 puts "ERROR: No se pudo entrar como usuario normal"
                 exit 1
@@ -93,7 +93,7 @@ jobs:
             send -- "su -\r"
 
             expect {
-              -re "(?i)password:" {
+              -re "(?i)(password|contraseña|clave).*:" {
                 send -- "$env(ROOT_PASSWORD)\r"
               }
               timeout {
@@ -103,8 +103,7 @@ jobs:
             }
 
             expect {
-              -re {# } {}
-              -re {#} {}
+              -re {# ?$} {}
               timeout {
                 puts "ERROR: No se pudo entrar como root con su"
                 exit 1
@@ -114,8 +113,7 @@ jobs:
             send -- "mkdir -p $env(APP_DIR_REMOTE)/frontend $env(APP_DIR_REMOTE)/backend/src/config\r"
 
             expect {
-              -re {# } {}
-              -re {#} {}
+              -re {# ?$} {}
               timeout {
                 puts "ERROR: No se pudieron crear las carpetas"
                 exit 1
@@ -125,8 +123,7 @@ jobs:
             send -- "mv /tmp/nutrione_frontend.env.tmp $env(APP_DIR_REMOTE)/frontend/.env\r"
 
             expect {
-              -re {# } {}
-              -re {#} {}
+              -re {# ?$} {}
               timeout {
                 puts "ERROR: No se pudo mover el .env del frontend"
                 exit 1
@@ -136,8 +133,7 @@ jobs:
             send -- "mv /tmp/nutrione_backend.env.tmp $env(APP_DIR_REMOTE)/backend/src/config/.env\r"
 
             expect {
-              -re {# } {}
-              -re {#} {}
+              -re {# ?$} {}
               timeout {
                 puts "ERROR: No se pudo mover el .env del backend"
                 exit 1
@@ -147,8 +143,7 @@ jobs:
             send -- "chown -R $env(PROD_USER):$env(PROD_USER) $env(APP_DIR_REMOTE)\r"
 
             expect {
-              -re {# } {}
-              -re {#} {}
+              -re {# ?$} {}
               timeout {
                 puts "ERROR: No se pudieron ajustar los dueños del proyecto"
                 exit 1
@@ -158,8 +153,7 @@ jobs:
             send -- "chmod 600 $env(APP_DIR_REMOTE)/frontend/.env $env(APP_DIR_REMOTE)/backend/src/config/.env\r"
 
             expect {
-              -re {# } {}
-              -re {#} {}
+              -re {# ?$} {}
               timeout {
                 puts "ERROR: No se pudieron ajustar los permisos de los .env"
                 exit 1
@@ -169,8 +163,8 @@ jobs:
             send -- "exit\r"
 
             expect {
-              -re {[$] } {}
-              -re {[$]} {}
+              -re {[$] ?$} {}
+              -re {> ?$} {}
               timeout {
                 puts "ERROR: No se pudo salir de root"
                 exit 1
