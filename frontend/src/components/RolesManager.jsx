@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Edit2, Trash2, X, CheckSquare, ShieldCheck, AlertCircle } from 'lucide-react';
+import { apiUrl } from '../helpers/api';
 
 const RolesManager = () => {
     const { token, hasPermission } = useAuth();
@@ -31,8 +32,8 @@ const RolesManager = () => {
         setError('');
         try {
             const [rolesRes, permRes] = await Promise.all([
-                fetch('/api/roles',    { headers: authHeaders }),
-                fetch('/api/permisos', { headers: authHeaders })
+                fetch(apiUrl('/roles'),    { headers: authHeaders }),
+                fetch(apiUrl('/permisos'), { headers: authHeaders })
             ]);
 
             if (!rolesRes.ok) {
@@ -99,7 +100,7 @@ const RolesManager = () => {
         setFormError('');
         setFormLoading(true);
 
-        const url    = editingRole ? `/api/roles/${editingRole.id_rol}` : '/api/roles';
+        const url    = editingRole ? apiUrl(`/roles/${editingRole.id_rol}`) : apiUrl('/roles');
         const method = editingRole ? 'PUT' : 'POST';
 
         try {
@@ -130,7 +131,7 @@ const RolesManager = () => {
 
         setError('');
         try {
-            const res  = await fetch(`/api/roles/${roleId}`, {
+            const res  = await fetch(apiUrl(`/roles/${roleId}`), {
                 method: 'DELETE',
                 headers: authHeaders
             });

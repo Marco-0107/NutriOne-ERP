@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import { apiUrl } from '../helpers/api';
 
 const AuthContext = createContext(null);
 
@@ -15,7 +16,7 @@ export const AuthProvider = ({ children }) => {
                 return;
             }
             try {
-                const response = await fetch('/api/auth/me', {
+                const response = await fetch(apiUrl('/auth/me'), {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
@@ -37,7 +38,7 @@ export const AuthProvider = ({ children }) => {
     }, [token]);
 
     const handleLogin = async (correo, contrasena) => {
-        const response = await fetch('/api/auth/login', {
+        const response = await fetch(apiUrl('/auth/login'), {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body:    JSON.stringify({ correo, contrasena })
