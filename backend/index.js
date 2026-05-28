@@ -40,7 +40,7 @@ AppDataSource.initialize()
 
         await seedDatabase(AppDataSource);
 
-        app.listen(PORT, HOST, () => {
+        app.listen(PORT, () => {
             console.log(`=> Servidor corriendo en http://${HOST}:${PORT}`);
         });
     })
