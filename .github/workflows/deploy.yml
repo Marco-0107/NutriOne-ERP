@@ -9,10 +9,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Instalar dependencias OpenVPN, SSH y sshpass
+      - name: Instalar dependencias OpenVPN, SSH, sshpass y expect
         run: |
           sudo apt update -qq > /dev/null 2>&1
-          sudo apt install -y -qq openvpn openvpn-systemd-resolved openssh-client sshpass
+          sudo apt install -y -qq openvpn openvpn-systemd-resolved openssh-client sshpass expect
 
       - name: Crear archivo de configuración OpenVPN
         run: echo "${{ secrets.OPENVPN_CONFIG }}" > /dev/shm/nutrione.ovpn
@@ -30,35 +30,156 @@ jobs:
         if: always()
         run: rm -f /dev/shm/nutrione.ovpn
 
-      - name: Crear archivos .env temporales
+      - name: Crear archivos .env temporales en GitHub Actions
         run: |
           printf '%s' "${{ secrets.ENV_FRONTEND_CONTENT }}" > /dev/shm/frontend.env.tmp
           printf '%s' "${{ secrets.ENV_BACKEND_CONTENT }}" > /dev/shm/backend.env.tmp
         shell: bash
 
-      - name: Copiar archivos .env al servidor remoto
+      - name: Copiar archivos .env temporales al servidor como mcerda
         env:
           PROD_HOST: ${{ secrets.PROD_HOST }}
           PROD_USER: ${{ secrets.PROD_USER }}
           PROD_PASSWORD: ${{ secrets.PROD_PASSWORD }}
           PROD_PORT: ${{ secrets.PROD_PORT }}
-          REMOTE_REPO_NAME: ${{ secrets.NOMBRE_REPOSITORIO || 'Proyecto' }}
         run: |
-          APP_DIR_REMOTE="/home/$PROD_USER/$REMOTE_REPO_NAME"
-          ENV_FILE_BACKEND_REMOTE="$APP_DIR_REMOTE/backend/src/config/.env"
-          ENV_FILE_FRONTEND_REMOTE="$APP_DIR_REMOTE/frontend/.env"
+          echo "Copiando .env temporales a /tmp del servidor"
 
-          echo "Copiando .env de frontend a $PROD_USER@$PROD_HOST:$ENV_FILE_FRONTEND_REMOTE"
+          sshpass "Copiando .env temporales a /tmp -p "$PROD_PASSWORD" scp \
+            -o StrictHostKeyChecking=no \
+            -P "$PROD_PORT" \
+            /dev/shm/frontend.env.tmp "$PROD_USER@$PROD_HOST:/tmp/nutrione_frontend.env.tmp"
+
           sshpass -p "$PROD_PASSWORD" scp \
             -o StrictHostKeyChecking=no \
             -P "$PROD_PORT" \
-            /dev/shm/frontend.env.tmp "$PROD_USER@$PROD_HOST:$ENV_FILE_FRONTEND_REMOTE"
+            /dev/shm/backend.env.tmp "$PROD_USER@$PROD_HOST:/tmp/nutrione_backend.env.tmp"
 
-          echo "Copiando .env de backend a $PROD_USER@$PROD_HOST:$ENV_FILE_BACKEND_REMOTE"
-          sshpass -p "$PROD_PASSWORD" scp \
-            -o StrictHostKeyChecking=no \
-            -P "$PROD_PORT" \
-            /dev/shm/backend.env.tmp "$PROD_USER@$PROD_HOST:$ENV_FILE_BACKEND_REMOTE"
+      - name: Mover archivos .env usando su root dentro del servidor
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_PASSWORD: ${{ secrets.PROD_PASSWORD }}
+          PROD_PORT: ${{ secrets.PROD_PORT }}
+          ROOT_PASSWORD: ${{ secrets.ROOT_PASSWORD }}
+          REMOTE_REPO_NAME: ${{ secrets.NOMBRE_REPOSITORIO }}
+        run: |
+          export APP_DIR_REMOTE="/home/$PROD_USER/$REMOTE_REPO_NAME"
+
+          expect <<'EOF'
+            set timeout 60
+
+            spawn ssh -tt -o StrictHostKeyChecking=no -p $env(PROD_PORT) $env(PROD_USER)@$env(PROD_HOST)
+
+            expect {
+              -re "(?i)password:" {
+                send -- "$env(PROD_PASSWORD)\r"
+              }
+              timeout {
+                puts "ERROR: No apareció el prompt de contraseña SSH"
+                exit 1
+              }
+            }
+
+            expect {
+              -re {[$] } {}
+              -re {[$]} {}
+              timeout {
+                puts "ERROR: No se pudo entrar como usuario normal"
+                exit 1
+              }
+            }
+
+            send -- "su -\r"
+
+            expect {
+              -re "(?i)password:" {
+                send -- "$env(ROOT_PASSWORD)\r"
+              }
+              timeout {
+                puts "ERROR: No apareció el prompt de contraseña root"
+                exit 1
+              }
+            }
+
+            expect {
+              -re {# } {}
+              -re {#} {}
+              timeout {
+                puts "ERROR: No se pudo entrar como root con su"
+                exit 1
+              }
+            }
+
+            send -- "mkdir -p $env(APP_DIR_REMOTE)/frontend $env(APP_DIR_REMOTE)/backend/src/config\r"
+
+            expect {
+              -re {# } {}
+              -re {#} {}
+              timeout {
+                puts "ERROR: No se pudieron crear las carpetas"
+                exit 1
+              }
+            }
+
+            send -- "mv /tmp/nutrione_frontend.env.tmp $env(APP_DIR_REMOTE)/frontend/.env\r"
+
+            expect {
+              -re {# } {}
+              -re {#} {}
+              timeout {
+                puts "ERROR: No se pudo mover el .env del frontend"
+                exit 1
+              }
+            }
+
+            send -- "mv /tmp/nutrione_backend.env.tmp $env(APP_DIR_REMOTE)/backend/src/config/.env\r"
+
+            expect {
+              -re {# } {}
+              -re {#} {}
+              timeout {
+                puts "ERROR: No se pudo mover el .env del backend"
+                exit 1
+              }
+            }
+
+            send -- "chown -R $env(PROD_USER):$env(PROD_USER) $env(APP_DIR_REMOTE)\r"
+
+            expect {
+              -re {# } {}
+              -re {#} {}
+              timeout {
+                puts "ERROR: No se pudieron ajustar los dueños del proyecto"
+                exit 1
+              }
+            }
+
+            send -- "chmod 600 $env(APP_DIR_REMOTE)/frontend/.env $env(APP_DIR_REMOTE)/backend/src/config/.env\r"
+
+            expect {
+              -re {# } {}
+              -re {#} {}
+              timeout {
+                puts "ERROR: No se pudieron ajustar los permisos de los .env"
+                exit 1
+              }
+            }
+
+            send -- "exit\r"
+
+            expect {
+              -re {[$] } {}
+              -re {[$]} {}
+              timeout {
+                puts "ERROR: No se pudo salir de root"
+                exit 1
+              }
+            }
+
+            send -- "exit\r"
+            expect eof
+          EOF
 
       - name: Eliminar archivos .env temporales del runner
         if: always()
@@ -66,22 +187,23 @@ jobs:
           rm -f /dev/shm/frontend.env.tmp
           rm -f /dev/shm/backend.env.tmp
 
-      - name: Ejecutar despliegue remoto
+      - name: Ejecutar despliegue remoto como mcerda
         env:
           PASS_GIT_COMMIT_SHA: ${{ github.sha }}
-          REMOTE_REPO_NAME: ${{ secrets.NOMBRE_REPOSITORIO || 'Proyecto' }}
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_PASSWORD: ${{ secrets.PROD_PASSWORD }}
+          PROD_PORT: ${{ secrets.PROD_PORT }}
+          REMOTE_REPO_NAME: ${{ secrets.NOMBRE_REPOSITORIO }}
         run: |
-          export GH_ARG_GIT_COMMIT_SHA="${{ env.PASS_GIT_COMMIT_SHA }}"
-          export GH_ARG_REPO_NAME="${{ env.REMOTE_REPO_NAME }}"
-
-          sshpass -p "${{ secrets.PROD_PASSWORD }}" ssh \
+          sshpass -p "$PROD_PASSWORD" ssh \
           -q \
           -o StrictHostKeyChecking=no \
-          -p ${{ secrets.PROD_PORT }} \
-          ${{ secrets.PROD_USER }}@${{ secrets.PROD_HOST }} \
+          -p "$PROD_PORT" \
+          "$PROD_USER@$PROD_HOST" \
           bash -s -- \
-          "$GH_ARG_GIT_COMMIT_SHA" \
-          "$GH_ARG_REPO_NAME" \
+          "$PASS_GIT_COMMIT_SHA" \
+          "$REMOTE_REPO_NAME" \
           << 'EOF'
             set -euo pipefail
 
