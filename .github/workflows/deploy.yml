@@ -243,7 +243,7 @@ jobs:
             cd "$APP_DIR/backend"
             npm ci
 
-            pm2 restart app-backend || pm2 start /index.js --name "app-backend"
+            pm2 restart app-backend || pm2 start index.js --name "app-backend"
 
             cd "$APP_DIR/frontend"
             npm ci
