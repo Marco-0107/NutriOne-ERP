@@ -114,7 +114,7 @@ jobs:
               }
             }
 
-            send -- "mkdir -p $env(APP_DIR_REMOTE)/frontend $env(APP_DIR_REMOTE)/backend/src/config\r"
+            send -- "mkdir -p $env(APP_DIR_REMOTE)/frontend $env(APP_DIR_REMOTE)/backend\r"
 
             expect {
               -re {# ?$} {}
@@ -134,7 +134,7 @@ jobs:
               }
             }
 
-            send -- "mv /tmp/nutrione_backend.env.tmp $env(APP_DIR_REMOTE)/backend/src/config/.env\r"
+            send -- "mv /tmp/nutrione_backend.env.tmp $env(APP_DIR_REMOTE)/backend/.env\r"
 
             expect {
               -re {# ?$} {}
@@ -154,7 +154,7 @@ jobs:
               }
             }
 
-            send -- "chmod 600 $env(APP_DIR_REMOTE)/frontend/.env $env(APP_DIR_REMOTE)/backend/src/config/.env\r"
+            send -- "chmod 600 $env(APP_DIR_REMOTE)/frontend/.env $env(APP_DIR_REMOTE)/backend/.env\r"
 
             expect {
               -re {# ?$} {}
@@ -227,7 +227,7 @@ jobs:
             git fetch origin
             git reset --hard "$ARG_GIT_COMMIT_SHA"
 
-            ENV_FILE_BACKEND="$APP_DIR/backend/src/config/.env"
+            ENV_FILE_BACKEND="$APP_DIR/backend/.env"
             ENV_FILE_FRONTEND="$APP_DIR/frontend/.env"
 
             if [ ! -f "$ENV_FILE_BACKEND" ]; then
