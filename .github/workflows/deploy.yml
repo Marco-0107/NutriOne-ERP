@@ -1,6 +1,10 @@
 name: Despliegue Nutrione a face-ubb
 
 on:
+  push:
+    branches:
+      - main
+
   workflow_dispatch:
 
 jobs:
