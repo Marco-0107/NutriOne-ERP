@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, LogOut, Activity, ClipboardList } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, logout, hasPermission } = useAuth();
@@ -52,6 +52,14 @@ const Sidebar = () => {
                     <span>Inicio</span>
                 </NavLink>
 
+                <NavLink
+                    to="/fichas"
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                >
+                    <ClipboardList size={18} />
+                    <span>Fichas Clinicas</span>
+                </NavLink>
+
                 {hasPermission('roles:ver') && (
                     <NavLink 
                         to="/roles" 
@@ -61,6 +69,8 @@ const Sidebar = () => {
                         <span>Roles y Permisos</span>
                     </NavLink>
                 )}
+
+                {hasPermission()}
             </nav>
 
             <div className="sidebar-footer">

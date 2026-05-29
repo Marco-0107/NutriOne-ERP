@@ -791,6 +791,104 @@ body {
   margin-top: 2px;
 }
 
+/* Mockup de Fichas Clinicas */
+.mockup-toolbar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mockup-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  width: 100%;
+  max-width: 520px;
+}
+
+.mockup-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 14px;
+  background: var(--gris-50);
+}
+
+.mockup-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mockup-table-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.mockup-table-wrap {
+  overflow-x: auto;
+}
+
+.mockup-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 940px;
+}
+
+.mockup-table thead th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--gris-50);
+}
+
+.mockup-table tbody td {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--gris-100);
+  color: var(--text-secondary);
+  font-size: 14px;
+  vertical-align: top;
+}
+
+.mockup-table tbody tr:hover {
+  background: rgba(109, 40, 217, 0.04);
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: var(--lavanda-suave);
+  color: var(--morado-primario);
+  border: 1px solid rgba(109, 40, 217, 0.15);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mockup-footnote {
+  padding: 12px 16px;
+  background: var(--gris-50);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
 /* Animations */
 @keyframes slideIn {
   from {
@@ -838,5 +936,19 @@ body {
   
   .content-container {
     padding: 20px;
+  }
+
+  .mockup-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mockup-toolbar-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .mockup-toolbar-actions .btn {
+    flex: 1;
   }
 }
