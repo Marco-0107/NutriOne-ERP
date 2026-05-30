@@ -35,6 +35,12 @@ const INITIAL_PERMISSIONS = [
         modulo: "Roles y Permisos",
         descripcion: "Permite eliminar roles del sistema (excepto el rol Administrador)"
     },
+    {
+        nombre: "Ver fichas",
+        codigo: "fichas:ver",
+        modulo: "Fichas Clinicas",
+        descripcion: "Permite acceder a la sección de fichas clínicas y visualizar los registros"
+    }
 ];
 
 module.exports = { INITIAL_PERMISSIONS };

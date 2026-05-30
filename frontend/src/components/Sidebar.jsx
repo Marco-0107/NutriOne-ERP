@@ -43,8 +43,8 @@ const Sidebar = () => {
             </div>
 
             <nav className="sidebar-nav">
-                <NavLink 
-                    to="/" 
+                <NavLink
+                    to="/"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                     end
                 >
@@ -52,25 +52,25 @@ const Sidebar = () => {
                     <span>Inicio</span>
                 </NavLink>
 
-                <NavLink
-                    to="/fichas"
-                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-                >
-                    <ClipboardList size={18} />
-                    <span>Fichas Clinicas</span>
-                </NavLink>
+                {hasPermission('fichas:ver') && (
+                    <NavLink
+                        to="/fichas"
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                        <ClipboardList size={18} />
+                        <span>Fichas Clinicas</span>
+                    </NavLink>
+                )}
 
                 {hasPermission('roles:ver') && (
-                    <NavLink 
-                        to="/roles" 
+                    <NavLink
+                        to="/roles"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                     >
                         <ShieldCheck size={18} />
                         <span>Roles y Permisos</span>
                     </NavLink>
                 )}
-
-                {hasPermission()}
             </nav>
 
             <div className="sidebar-footer">
