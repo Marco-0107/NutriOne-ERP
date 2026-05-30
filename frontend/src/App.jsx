@@ -5,6 +5,7 @@ import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import RolesManager from './components/RolesManager';
+import AntecedentesMockup from './components/AntecedentesMockup';
 
 // Inner App component to access context hooks
 const AppContent = () => {
@@ -44,6 +45,8 @@ const AppContent = () => {
                 return 'Panel de Inicio';
             case '/roles':
                 return 'Configuración de Roles';
+            case '/fichas':
+                return 'Fichas Clínicas';
             default:
                 return 'NutriERP';
         }
@@ -65,6 +68,8 @@ const AppContent = () => {
                 <main className="content-container">
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
+
+                        <Route path="/fichas" element={<AntecedentesMockup />} />
                         
                         {hasPermission('roles:ver') ? (
                             <Route path="/roles" element={<RolesManager />} />
