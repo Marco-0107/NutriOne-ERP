@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, logout, hasPermission } = useAuth();
@@ -43,8 +43,8 @@ const Sidebar = () => {
             </div>
 
             <nav className="sidebar-nav">
-                <NavLink 
-                    to="/" 
+                <NavLink
+                    to="/"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                     end
                 >
@@ -52,13 +52,43 @@ const Sidebar = () => {
                     <span>Inicio</span>
                 </NavLink>
 
+                {hasPermission('fichas:ver') && (
+                    <NavLink
+                        to="/fichas"
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                        <ClipboardList size={18} />
+                        <span>Fichas Clinicas</span>
+                    </NavLink>
+                )}
+
                 {hasPermission('roles:ver') && (
-                    <NavLink 
-                        to="/roles" 
+                    <NavLink
+                        to="/roles"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
                     >
                         <ShieldCheck size={18} />
                         <span>Roles y Permisos</span>
+                    </NavLink>
+                )}
+
+                {hasPermission('usuarios:ver') && (
+                    <NavLink
+                        to="/usuarios"
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                        <UserCog size={18} />
+                        <span>Usuarios</span>
+                    </NavLink>
+                )}
+
+                {hasPermission('pacientes:ver') && (
+                    <NavLink
+                        to="/pacientes"
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                        <Users size={18} />
+                        <span>Pacientes</span>
                     </NavLink>
                 )}
             </nav>

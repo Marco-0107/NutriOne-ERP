@@ -1,0 +1,98 @@
+/**
+ * Catálogo de Permisos del Sistema NutriOne-ERP
+ *
+ * Cada permiso define:
+ *  - nombre:      Etiqueta legible del permiso (se muestra en el frontend)
+ *  - codigo:      Identificador único granular (se usa en el backend/frontend para validar acceso)
+ *  - modulo:      Módulo al que pertenece el permiso (para agruparlos en la UI)
+ *  - descripcion: Descripción breve de lo que otorga este permiso
+ *
+ */
+
+const SEED_PERMISSIONS = [
+    // ─────────────── Módulo: Roles y Permisos ───────────────
+    {
+        nombre: "Ver Pestaña de Roles",
+        codigo: "roles:ver",
+        modulo: "Roles y Permisos",
+        descripcion: "Permite ver la pestaña de roles en la barra lateral y listar los roles existentes"
+    },
+    {
+        nombre: "Crear Roles",
+        codigo: "roles:crear",
+        modulo: "Roles y Permisos",
+        descripcion: "Permite crear nuevos roles y asignarles permisos del sistema"
+    },
+    {
+        nombre: "Editar Roles",
+        codigo: "roles:editar",
+        modulo: "Roles y Permisos",
+        descripcion: "Permite editar roles existentes y actualizar sus asignaciones de permisos"
+    },
+    {
+        nombre: "Eliminar Roles",
+        codigo: "roles:eliminar",
+        modulo: "Roles y Permisos",
+        descripcion: "Permite eliminar roles del sistema (excepto el rol Administrador)"
+    },
+    // ─────────────── Módulo: Usuarios ───────────────
+    {
+        nombre: "Ver Pestaña de Usuarios",
+        codigo: "usuarios:ver",
+        modulo: "Usuarios",
+        descripcion: "Permite ver la pestaña de usuarios en la barra lateral y listar los usuarios del sistema"
+    },
+    {
+        nombre: "Crear Usuarios",
+        codigo: "usuarios:crear",
+        modulo: "Usuarios",
+        descripcion: "Permite registrar nuevos usuarios en el sistema"
+    },
+    {
+        nombre: "Editar Usuarios",
+        codigo: "usuarios:editar",
+        modulo: "Usuarios",
+        descripcion: "Permite editar los datos de usuarios existentes"
+    },
+    {
+        nombre: "Eliminar Usuarios",
+        codigo: "usuarios:eliminar",
+        modulo: "Usuarios",
+        descripcion: "Permite eliminar usuarios del sistema"
+    },
+
+    // ─────────────── Módulo: Pacientes ───────────────
+    {
+        nombre: "Ver Pestaña de Pacientes",
+        codigo: "pacientes:ver",
+        modulo: "Pacientes",
+        descripcion: "Permite ver la pestaña de pacientes en la barra lateral y listar los pacientes registrados"
+    },
+    {
+        nombre: "Crear Pacientes",
+        codigo: "pacientes:crear",
+        modulo: "Pacientes",
+        descripcion: "Permite registrar nuevos pacientes en el sistema"
+    },
+    {
+        nombre: "Editar Pacientes",
+        codigo: "pacientes:editar",
+        modulo: "Pacientes",
+        descripcion: "Permite editar los datos de pacientes existentes"
+    },
+    {
+        nombre: "Eliminar Pacientes",
+        codigo: "pacientes:eliminar",
+        modulo: "Pacientes",
+        descripcion: "Permite eliminar pacientes del sistema"
+    },
+    // ─────────────── Módulo: Ficha Clinica ───────────────
+    {
+        nombre: "Ver fichas",
+        codigo: "fichas:ver",
+        modulo: "Fichas Clinicas",
+        descripcion: "Permite acceder a la sección de fichas clínicas y visualizar los registros"
+    }
+];
+
+module.exports = { SEED_PERMISSIONS };
