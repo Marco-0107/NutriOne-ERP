@@ -1,5 +1,5 @@
 /**
- * Catálogo de Permisos Iniciales del Sistema NutriOne-ERP
+ * Catálogo de Permisos del Sistema NutriOne-ERP
  *
  * Cada permiso define:
  *  - nombre:      Etiqueta legible del permiso (se muestra en el frontend)
@@ -9,7 +9,7 @@
  *
  */
 
-const INITIAL_PERMISSIONS = [
+const SEED_PERMISSIONS = [
     // ─────────────── Módulo: Roles y Permisos ───────────────
     {
         nombre: "Ver Pestaña de Roles",
@@ -95,4 +95,4 @@ const INITIAL_PERMISSIONS = [
     }
 ];
 
-module.exports = { INITIAL_PERMISSIONS };
+module.exports = { SEED_PERMISSIONS };

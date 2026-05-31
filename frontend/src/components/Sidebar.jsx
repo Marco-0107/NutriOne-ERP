@@ -1,8 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog } from 'lucide-react';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, logout, hasPermission } = useAuth();

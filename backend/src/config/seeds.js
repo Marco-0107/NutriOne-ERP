@@ -1,12 +1,12 @@
 const bcrypt = require("bcryptjs");
-const { INITIAL_PERMISSIONS } = require("./initialPermissions");
+const { SEED_PERMISSIONS } = require("./seedPermissions");
 
 /**
  * Función de Semillas (Seeds) de la Base de Datos
  *
  * Se ejecuta al iniciar el backend. Verifica si los datos esenciales
  * existen y los crea si no están presentes:
- *  1. Permisos iniciales del sistema (definidos en initialPermissions.js)
+ *  1. Permisos del sistema (definidos en seedPermissions.js)
  *  2. Rol "Administrador" con todos los permisos
  *  3. Usuario administrador por defecto (admin@nutrione.cl / admin123)
  */
@@ -21,7 +21,7 @@ async function seedDatabase(AppDataSource) {
         const usuarioRolRepo = AppDataSource.getRepository("UsuarioRol");
 
         // ─── 1. Sembrar permisos definidos en initialPermissions.js ───
-        for (const pData of INITIAL_PERMISSIONS) {
+        for (const pData of SEED_PERMISSIONS) {
             let permiso = await permisoRepo.findOne({ where: { codigo: pData.codigo } });
             if (!permiso) {
                 permiso = permisoRepo.create(pData);
