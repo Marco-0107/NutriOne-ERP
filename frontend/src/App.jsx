@@ -5,6 +5,8 @@ import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import RolesManager from './components/RolesManager';
+import PacientesManager from './components/PacientesManager';
+import UsuariosManager from './components/UsuariosManager';
 
 // Inner App component to access context hooks
 const AppContent = () => {
@@ -44,6 +46,10 @@ const AppContent = () => {
                 return 'Panel de Inicio';
             case '/roles':
                 return 'Configuración de Roles';
+            case '/pacientes':
+                return 'Gestión de Pacientes';
+            case '/usuarios':
+                return 'Gestión de Usuarios';
             default:
                 return 'NutriERP';
         }
@@ -71,7 +77,19 @@ const AppContent = () => {
                         ) : (
                             <Route path="/roles" element={<Navigate to="/" replace />} />
                         )}
-                        
+
+                        {hasPermission('pacientes:ver') ? (
+                            <Route path="/pacientes" element={<PacientesManager />} />
+                        ) : (
+                            <Route path="/pacientes" element={<Navigate to="/" replace />} />
+                        )}
+
+                        {hasPermission('usuarios:ver') ? (
+                            <Route path="/usuarios" element={<UsuariosManager />} />
+                        ) : (
+                            <Route path="/usuarios" element={<Navigate to="/" replace />} />
+                        )}
+
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
                 </main>
