@@ -92,6 +92,44 @@ const SEED_PERMISSIONS = [
         codigo: "fichas:ver",
         modulo: "Fichas Clinicas",
         descripcion: "Permite acceder a la sección de fichas clínicas y visualizar los registros"
+    },
+    // ─────────────── Módulo: Citas ───────────────
+    {
+        nombre: "Ver Pestaña de Citas",
+        codigo: "citas:ver",
+        modulo: "Citas",
+        descripcion: "Permite ver la pestaña de agenda/citas y listar las citas existentes"
+    },
+    {
+        nombre: "Crear Citas",
+        codigo: "citas:crear",
+        modulo: "Citas",
+        descripcion: "Permite crear nuevas citas desde la agenda interna"
+    },
+    {
+        nombre: "Editar Citas",
+        codigo: "citas:editar",
+        modulo: "Citas",
+        descripcion: "Permite editar citas existentes"
+    },
+    {
+        nombre: "Cancelar Citas",
+        codigo: "citas:cancelar",
+        modulo: "Citas",
+        descripcion: "Permite cancelar citas agendadas"
+    },
+    // ─────────────── Módulo: Disponibilidad ───────────────
+    {
+        nombre: "Ver Disponibilidad",
+        codigo: "disponibilidad:ver",
+        modulo: "Disponibilidad",
+        descripcion: "Permite ver la configuración de disponibilidad horaria"
+    },
+    {
+        nombre: "Gestionar Disponibilidad",
+        codigo: "disponibilidad:gestionar",
+        modulo: "Disponibilidad",
+        descripcion: "Permite crear, editar y eliminar bloques de disponibilidad horaria"
     }
 ];
 
