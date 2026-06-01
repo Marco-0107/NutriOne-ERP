@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList, Clock } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, logout, hasPermission } = useAuth();
@@ -59,6 +59,16 @@ const Sidebar = () => {
                     >
                         <ClipboardList size={18} />
                         <span>Fichas Clinicas</span>
+                    </NavLink>
+                )}
+
+                {hasPermission('disponibilidad:ver') && (
+                    <NavLink
+                        to="/disponibilidad"
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                        <Clock size={18} />
+                        <span>Disponibilidad</span>
                     </NavLink>
                 )}
 
