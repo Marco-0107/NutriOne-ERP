@@ -8,6 +8,8 @@ import RolesManager from './components/RolesManager';
 import PacientesManager from './components/PacientesManager';
 import UsuariosManager from './components/UsuariosManager';
 import AntecedentesMockup from './components/AntecedentesMockup';
+import AgendarPublico from './components/AgendarPublico';
+import DisponibilidadManager from './components/DisponibilidadManager';
 
 // Inner App component to access context hooks
 const AppContent = () => {
@@ -35,6 +37,7 @@ const AppContent = () => {
         return (
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/agendar" element={<AgendarPublico />} />
                 <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
         );
@@ -53,6 +56,10 @@ const AppContent = () => {
                 return 'Gestión de Usuarios';
             case '/fichas':
                 return 'Fichas Clínicas';
+            case '/disponibilidad':
+                return 'Disponibilidad Horaria';
+            case '/agendar':
+                return 'Agendar Cita';
             default:
                 return 'NutriERP';
         }
@@ -76,11 +83,19 @@ const AppContent = () => {
                         <Route path="/" element={<Dashboard />} />
 
                         <Route path="/fichas" element={<AntecedentesMockup />} />
+
+                        <Route path="/agendar" element={<AgendarPublico />} />
                         
                         {hasPermission('roles:ver') ? (
                             <Route path="/roles" element={<RolesManager />} />
                         ) : (
                             <Route path="/roles" element={<Navigate to="/" replace />} />
+                        )}
+
+                        {hasPermission('disponibilidad:ver') ? (
+                            <Route path="/disponibilidad" element={<DisponibilidadManager />} />
+                        ) : (
+                            <Route path="/disponibilidad" element={<Navigate to="/" replace />} />
                         )}
 
                         {hasPermission('pacientes:ver') ? (
