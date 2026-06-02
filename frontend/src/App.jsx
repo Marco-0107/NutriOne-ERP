@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
@@ -10,6 +11,8 @@ import UsuariosManager from './components/UsuariosManager';
 import AntecedentesMockup from './components/AntecedentesMockup';
 import AgendarPublico from './components/AgendarPublico';
 import DisponibilidadManager from './components/DisponibilidadManager';
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 // Inner App component to access context hooks
 const AppContent = () => {
@@ -37,7 +40,11 @@ const AppContent = () => {
         return (
             <Routes>
                 <Route path="/login" element={<Login />} />
-                <Route path="/agendar" element={<AgendarPublico />} />
+                <Route path="/agendar" element={
+                    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
+                        <AgendarPublico />
+                    </GoogleReCaptchaProvider>
+                } />
                 <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
         );
