@@ -3,6 +3,7 @@ const {
     getNutricionistasPublicoService,
     getDisponibilidadPublicaService,
     agendarCitaPublicaService,
+    getCitasPublicasCalendarioService,
 } = require("../services/citaPublicaService");
 const { createOtp, verifyOtp, isPhoneVerified, consumeToken } = require("../services/otpService");
 const { sendOtp, isMock } = require("../services/smsService");
@@ -44,6 +45,20 @@ const getDisponibilidad = async (req, res) => {
             return res.status(err.status).json({ success: false, message: err.message });
         }
         return serverError(res, err, "citaPublicaController.getDisponibilidad");
+    }
+};
+
+const getCitasPublicasCalendario = async (req, res) => {
+    try {
+        const { desde, hasta } = req.query;
+        const data = await getCitasPublicasCalendarioService({ desde, hasta });
+        return res.json({ success: true, data });
+    } catch (err) {
+        if (err.status) {
+            return res.status(err.status).json({ success: false, message: err.message });
+        }
+
+        return serverError(res, err, "citaPublicaController.getCitasPublicasCalendario");
     }
 };
 
@@ -143,4 +158,4 @@ const agendarCita = async (req, res) => {
     }
 };
 
-module.exports = { getNutricionistas, getDisponibilidad, enviarOtp, verificarOtp, agendarCita };
+module.exports = { getNutricionistas, getDisponibilidad, getCitasPublicasCalendario, enviarOtp, verificarOtp, agendarCita };

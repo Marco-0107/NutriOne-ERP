@@ -3,6 +3,7 @@ const router = express.Router();
 const {
     getNutricionistas,
     getDisponibilidad,
+    getCitasPublicasCalendario,
     enviarOtp,
     verificarOtp,
     agendarCita,
@@ -10,6 +11,7 @@ const {
 
 router.get("/nutricionistas", getNutricionistas);
 router.get("/disponibilidad/:nutricionistaId", getDisponibilidad);
+router.get("/api/public/citas/calendario", getCitasPublicasCalendario);
 router.post("/enviar-otp", enviarOtp);
 router.post("/verificar-otp", verificarOtp);
 router.post("/agendar", agendarCita);

@@ -6,6 +6,7 @@ import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import RolesManager from './components/RolesManager';
+import Calendario from './components/Calendario';
 import PacientesManager from './components/PacientesManager';
 import UsuariosManager from './components/UsuariosManager';
 import AntecedentesMockup from './components/AntecedentesMockup';
@@ -57,6 +58,8 @@ const AppContent = () => {
                 return 'Panel de Inicio';
             case '/roles':
                 return 'Configuración de Roles';
+            case '/calendario':
+                return 'Calendario Semanal';
             case '/pacientes':
                 return 'Gestión de Pacientes';
             case '/usuarios':
@@ -90,6 +93,8 @@ const AppContent = () => {
                         <Route path="/" element={<Dashboard />} />
 
                         <Route path="/fichas" element={<AntecedentesMockup />} />
+
+                        <Route path="/calendario" element={<Calendario />} />
 
                         <Route path="/agendar" element={<AgendarPublico />} />
                         

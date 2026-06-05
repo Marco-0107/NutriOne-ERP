@@ -1,5 +1,5 @@
 const { AppDataSource } = require("../config/configDb");
-const { Not, In } = require("typeorm");
+const { Between, Not, In } = require("typeorm");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 
@@ -103,6 +103,116 @@ const getDisponibilidadPublicaService = async (nutricionistaId, fecha) => {
     };
 
     return allSlots.filter(slot => !isOcupado(slot, citas));
+};
+
+const mapCitaPublica = (cita) => ({
+    id_cita: cita.id_cita,
+    fecha: cita.fecha,
+    hora_inicio: cita.hora_inicio,
+    hora_fin: cita.hora_fin,
+    estado: cita.estado,
+    origen: cita.origen,
+    observacion: cita.observacion,
+    paciente: cita.paciente
+        ? {
+            id: cita.paciente.id,
+            nombres: cita.paciente.usuario?.nombres || "",
+            apellido_paterno: cita.paciente.usuario?.apellido_paterno || "",
+            apellido_materno: cita.paciente.usuario?.apellido_materno || "",
+        }
+        : null,
+    usuario: cita.usuario
+        ? {
+            id: cita.usuario.id,
+            nombres: cita.usuario.nombres,
+            apellido_paterno: cita.usuario.apellido_paterno,
+            apellido_materno: cita.usuario.apellido_materno,
+        }
+        : null,
+    servicio: cita.servicio
+        ? {
+            id: cita.servicio.id,
+            nombre: cita.servicio.nombre,
+            descripcion: cita.servicio.descripcion,
+            duracion_minutos: cita.servicio.duracion_minutos,
+        }
+        : null,
+});
+
+const formatLocalDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+};
+
+const parseDateOrThrow = (value, label) => {
+    if (!value) return null;
+
+    const parsed = new Date(`${value}T12:00:00`);
+    if (Number.isNaN(parsed.getTime())) {
+        throw { status: 400, message: `${label} debe tener formato YYYY-MM-DD` };
+    }
+
+    return formatLocalDate(parsed);
+};
+
+const getCurrentWeekRange = () => {
+    const today = new Date();
+    const currentDay = today.getDay();
+    const diff = currentDay === 0 ? -6 : 1 - currentDay;
+
+    const start = new Date(today);
+    start.setDate(today.getDate() + diff);
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    end.setHours(23, 59, 59, 999);
+
+    return {
+        desde: formatLocalDate(start),
+        hasta: formatLocalDate(end),
+    };
+};
+
+const getCitasPublicasCalendarioService = async ({ desde, hasta } = {}) => {
+    const range = desde && hasta
+        ? {
+            desde: parseDateOrThrow(desde, "La fecha inicial"),
+            hasta: parseDateOrThrow(hasta, "La fecha final"),
+        }
+        : getCurrentWeekRange();
+
+    if (new Date(`${range.desde}T12:00:00`) > new Date(`${range.hasta}T12:00:00`)) {
+        throw { status: 400, message: "La fecha inicial no puede ser mayor que la fecha final" };
+    }
+
+    const citaRepo = AppDataSource.getRepository("Cita");
+
+    const citas = await citaRepo.find({
+        where: {
+            fecha: Between(range.desde, range.hasta),
+            origen: "publica",
+        },
+        relations: {
+            paciente: {
+                usuario: true,
+            },
+            usuario: true,
+            servicio: true,
+        },
+        order: {
+            fecha: "ASC",
+            hora_inicio: "ASC",
+        },
+    });
+
+    return {
+        rango: range,
+        total: citas.length,
+        citas: citas.map(mapCitaPublica),
+    };
 };
 
 /**
@@ -235,4 +345,5 @@ module.exports = {
     getNutricionistasPublicoService,
     getDisponibilidadPublicaService,
     agendarCitaPublicaService,
+    getCitasPublicasCalendarioService,
 };

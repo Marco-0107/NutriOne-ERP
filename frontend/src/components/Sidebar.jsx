@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList, Clock } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList, Clock, CalendarDays } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, logout, hasPermission } = useAuth();
@@ -50,6 +50,14 @@ const Sidebar = () => {
                 >
                     <LayoutDashboard size={18} />
                     <span>Inicio</span>
+                </NavLink>
+
+                <NavLink
+                    to="/calendario"
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                >
+                    <CalendarDays size={18} />
+                    <span>Calendario</span>
                 </NavLink>
 
                 {hasPermission('fichas:ver') && (

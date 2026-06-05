@@ -101,12 +101,6 @@ const SEED_PERMISSIONS = [
         descripcion: "Permite ver la pestaña de agenda/citas y listar las citas existentes"
     },
     {
-        nombre: "Crear Citas",
-        codigo: "citas:crear",
-        modulo: "Citas",
-        descripcion: "Permite crear nuevas citas desde la agenda interna"
-    },
-    {
         nombre: "Editar Citas",
         codigo: "citas:editar",
         modulo: "Citas",
@@ -130,6 +124,14 @@ const SEED_PERMISSIONS = [
         codigo: "disponibilidad:gestionar",
         modulo: "Disponibilidad",
         descripcion: "Permite crear, editar y eliminar bloques de disponibilidad horaria"
+    },
+
+    // ─────────────── Módulo: Calendario ───────────────}
+    {
+        nombre: "Ver Calendario",
+        codigo: "calendario:ver",
+        modulo: "Calendario",
+        descripcion: "Permite acceder a la vista de calendario para visualizar citas"
     }
 ];
 
