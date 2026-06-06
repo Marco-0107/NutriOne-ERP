@@ -118,4 +118,14 @@ const updateUsuarioSchema = Joi.object({
         }),
 });
 
-module.exports = { createUsuarioSchema, updateUsuarioSchema };
+const assignRolSchema = Joi.object({
+    rol: Joi.string()
+        .min(1).max(100)
+        .required()
+        .messages({
+            "any.required": "El rol es requerido",
+            "string.empty": "El rol no puede estar vacío",
+        }),
+});
+
+module.exports = { createUsuarioSchema, updateUsuarioSchema, assignRolSchema };

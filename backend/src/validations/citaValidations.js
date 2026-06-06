@@ -5,6 +5,31 @@ const HORA_MESSAGES = {
     "string.pattern.base": "La hora debe tener el formato HH:mm (ej: 09:00, 14:30)",
 };
 
+const createCitaSchema = Joi.object({
+    id_paciente: Joi.number().integer().positive().required()
+        .messages({
+            "any.required": "El paciente es requerido",
+            "number.base":  "El ID de paciente debe ser un número válido",
+        }),
+    id_usuario: Joi.number().integer().positive().required()
+        .messages({
+            "any.required": "El nutricionista es requerido",
+            "number.base":  "El ID de nutricionista debe ser un número válido",
+        }),
+    id_servicio: Joi.number().integer().positive().allow(null).optional(),
+    fecha: Joi.string().isoDate().required()
+        .messages({
+            "any.required":   "La fecha es requerida",
+            "string.isoDate": "La fecha debe tener formato YYYY-MM-DD",
+        }),
+    hora_inicio: Joi.string().pattern(HORA_PATTERN).required()
+        .messages({ ...HORA_MESSAGES, "any.required": "La hora de inicio es requerida" }),
+    hora_fin: Joi.string().pattern(HORA_PATTERN).required()
+        .messages({ ...HORA_MESSAGES, "any.required": "La hora de fin es requerida" }),
+    observacion: Joi.string().max(1000).allow("", null).optional()
+        .messages({ "string.max": "La observación no puede superar los 1000 caracteres" }),
+});
+
 const updateCitaSchema = Joi.object({
     id_paciente: Joi.number().integer().positive().optional(),
     id_usuario: Joi.number().integer().positive().optional(),
@@ -122,6 +147,7 @@ const citaPublicaSchema = Joi.object({
 });
 
 module.exports = {
+    createCitaSchema,
     updateCitaSchema,
     cancelarCitaSchema,
     citaPublicaSchema,

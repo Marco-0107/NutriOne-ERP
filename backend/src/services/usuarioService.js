@@ -21,10 +21,15 @@ const getUsuariosService = async () => {
     const usuarios = await usuarioRepo
         .createQueryBuilder("usuario")
         .leftJoin("usuario.paciente", "paciente")
+        .leftJoinAndSelect("usuario.usuarioRoles", "usuarioRol")
+        .leftJoinAndSelect("usuarioRol.role", "role")
         .where("paciente.id IS NULL")
         .orderBy("usuario.id", "ASC")
         .getMany();
-    return usuarios.map(formatUsuario);
+    return usuarios.map(u => {
+        const rolActivo = u.usuarioRoles?.find(ur => ur.estado === "activo");
+        return { ...formatUsuario(u), rol: rolActivo?.role?.nombre || null };
+    });
 };
 
 const createUsuarioService = async ({
@@ -112,9 +117,50 @@ const deleteUsuarioService = async (usuarioId) => {
     return { message: "Usuario eliminado con éxito" };
 };
 
+const assignRolService = async (usuarioId, rolInput) => {
+    const usuarioRepo    = AppDataSource.getRepository("Usuario");
+    const roleRepo       = AppDataSource.getRepository("Role");
+    const usuarioRolRepo = AppDataSource.getRepository("UsuarioRol");
+
+    const usuario = await usuarioRepo.findOneBy({ id: usuarioId });
+    if (!usuario) {
+        throw { status: 404, message: "Usuario no encontrado" };
+    }
+
+    const role = await roleRepo
+        .createQueryBuilder("role")
+        .where("LOWER(role.nombre) = LOWER(:nombre)", { nombre: rolInput })
+        .andWhere("role.estado = :estado", { estado: "activo" })
+        .getOne();
+
+    if (!role) {
+        throw { status: 400, message: `El rol '${rolInput}' no existe en el sistema` };
+    }
+
+    const existentes = await usuarioRolRepo.find({
+        where: { usuario: { id: usuarioId } },
+    });
+    if (existentes.length > 0) {
+        await usuarioRolRepo.remove(existentes);
+    }
+
+    const nuevaAsignacion = usuarioRolRepo.create({
+        usuario,
+        role,
+        estado: "activo",
+    });
+    await usuarioRolRepo.save(nuevaAsignacion);
+
+    return {
+        ...formatUsuario(usuario),
+        rol: role.nombre,
+    };
+};
+
 module.exports = {
     getUsuariosService,
     createUsuarioService,
     updateUsuarioService,
     deleteUsuarioService,
+    assignRolService,
 };

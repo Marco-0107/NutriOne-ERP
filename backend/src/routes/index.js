@@ -6,6 +6,7 @@ const usuarioRoutes  = require("./usuarioRoutes");
 const pacienteRoutes = require("./pacienteRoutes");
 const disponibilidadRoutes = require("./disponibilidadRoutes");
 const citaPublicaRoutes = require("./citaPublicaRoutes");
+const citaRoutes        = require("./citaRoutes");
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ router.use("/permisos",  permisoRoutes);
 router.use("/usuarios",  usuarioRoutes);
 router.use("/pacientes", pacienteRoutes);
 router.use("/disponibilidad", disponibilidadRoutes);
+router.use("/citas",  citaRoutes);
 router.use("/public", citaPublicaRoutes);
 
 module.exports = router;
