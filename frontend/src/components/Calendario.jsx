@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
 	AlertCircle,
+	Ban,
 	CalendarDays,
 	ChevronLeft,
 	ChevronRight,
@@ -70,13 +71,23 @@ const Calendario = () => {
 	const [weekAnchor, setWeekAnchor] = useState(() => new Date());
 	const [citas, setCitas] = useState([]);
 	const [pacientes, setPacientes] = useState([]);
+	const [nutricionistas, setNutricionistas] = useState([]);
+	const [slots, setSlots] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [pacientesLoading, setPacientesLoading] = useState(false);
+	const [nutricionistasLoading, setNutricionistasLoading] = useState(false);
+	const [slotsLoading, setSlotsLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [pacientesError, setPacientesError] = useState('');
 	const [createOpen, setCreateOpen] = useState(false);
 	const [createError, setCreateError] = useState('');
+	const [createLoading, setCreateLoading] = useState(false);
 	const [createForm, setCreateForm] = useState(INITIAL_CREATE_FORM);
+	const [cancelOpen, setCancelOpen] = useState(false);
+	const [cancelCita, setCancelCita] = useState(null);
+	const [cancelMotivo, setCancelMotivo] = useState('');
+	const [cancelLoading, setCancelLoading] = useState(false);
+	const [cancelError, setCancelError] = useState('');
 	const daysScrollRef = useRef(null);
 
 	const weekStart = useMemo(() => getWeekStart(weekAnchor), [weekAnchor]);
@@ -103,7 +114,11 @@ const Calendario = () => {
 		setError('');
 
 		try {
-			const response = await fetch(apiUrl(`/public/citas/calendario?desde=${toISODateLocal(weekDays[0].date)}&hasta=${toISODateLocal(weekDays[6].date)}`), {
+			const desde = toISODateLocal(weekDays[0].date);
+			const hasta = toISODateLocal(weekDays[6].date);
+			const usuarioParam = isCurrentUserNutricionista ? `&id_usuario=${currentUserId}` : '';
+			const response = await fetch(apiUrl(`/citas?desde=${desde}&hasta=${hasta}${usuarioParam}`), {
+				headers: { Authorization: `Bearer ${token}` },
 			});
 
 			const data = await response.json();
@@ -111,7 +126,7 @@ const Calendario = () => {
 				throw new Error(data.message || 'Error al obtener las citas del calendario');
 			}
 
-			setCitas(data.data?.citas || []);
+			setCitas(data.data || []);
 		} catch (err) {
 			setError(err.message || 'Error de conexión con el servidor');
 			setCitas([]);
@@ -152,9 +167,37 @@ const Calendario = () => {
 		fetchCitas();
 	}, [weekDays]);
 
+	const fetchSlots = async (nutricionistaId, fecha) => {
+		if (!nutricionistaId || !fecha) { setSlots([]); return; }
+		setSlotsLoading(true);
+		try {
+			const response = await fetch(apiUrl(`/public/disponibilidad/${nutricionistaId}?fecha=${fecha}`));
+			const data = await response.json();
+			setSlots(response.ok ? (data.data || []) : []);
+		} catch {
+			setSlots([]);
+		} finally {
+			setSlotsLoading(false);
+		}
+	};
+
+	const fetchNutricionistas = async () => {
+		setNutricionistasLoading(true);
+		try {
+			const response = await fetch(apiUrl('/public/nutricionistas'));
+			const data = await response.json();
+			setNutricionistas(response.ok ? (data.data || []) : []);
+		} catch {
+			setNutricionistas([]);
+		} finally {
+			setNutricionistasLoading(false);
+		}
+	};
+
 	useEffect(() => {
 		if (createOpen) {
 			fetchPacientes();
+			if (!isCurrentUserNutricionista) fetchNutricionistas();
 		}
 	}, [createOpen, token]);
 
@@ -192,32 +235,141 @@ const Calendario = () => {
 	};
 
 	const openCreateModal = (cita = null) => {
+		const fecha = cita?.fecha || toISODateLocal(new Date());
 		setCreateForm({
 			id_paciente: cita?.paciente?.id ? String(cita.paciente.id) : '',
 			id_usuario: currentUserId ? String(currentUserId) : '',
 			id_servicio: cita?.servicio?.id ? String(cita.servicio.id) : '',
-			fecha: cita?.fecha || toISODateLocal(new Date()),
-			hora_inicio: cita?.hora_inicio ? cita.hora_inicio.substring(0, 5) : '',
-			hora_fin: cita?.hora_fin ? cita.hora_fin.substring(0, 5) : '',
+			fecha,
+			hora_inicio: '',
+			hora_fin: '',
 			observacion: '',
 		});
 		setCreateError('');
+		setSlots([]);
 		setCreateOpen(true);
+		if (isCurrentUserNutricionista && currentUserId) {
+			fetchSlots(currentUserId, fecha);
+		}
 	};
 
 	const closeCreateModal = () => {
 		setCreateOpen(false);
 		setCreateError('');
 		setCreateForm(INITIAL_CREATE_FORM);
+		setSlots([]);
 	};
 
 	const handleCreateChange = (field) => (e) => {
 		setCreateForm((prev) => ({ ...prev, [field]: e.target.value }));
 	};
 
-	const handleCreateSubmit = (e) => {
+	const handleFechaChange = (e) => {
+		const fecha = e.target.value;
+		const nutId = isCurrentUserNutricionista ? currentUserId : createForm.id_usuario;
+		setCreateForm((prev) => ({ ...prev, fecha, hora_inicio: '', hora_fin: '' }));
+		fetchSlots(nutId, fecha);
+	};
+
+	const handleNutricionistaChange = (e) => {
+		const id_usuario = e.target.value;
+		setCreateForm((prev) => ({ ...prev, id_usuario, hora_inicio: '', hora_fin: '' }));
+		fetchSlots(id_usuario, createForm.fecha);
+	};
+
+	const handleSlotChange = (e) => {
+		const selected = slots.find((s) => s.hora_inicio === e.target.value);
+		setCreateForm((prev) => ({
+			...prev,
+			hora_inicio: selected?.hora_inicio ?? '',
+			hora_fin:    selected?.hora_fin    ?? '',
+		}));
+	};
+
+	const handleCreateSubmit = async (e) => {
 		e.preventDefault();
-		closeCreateModal();
+		setCreateError('');
+
+		const nutricionistaId = isCurrentUserNutricionista ? currentUserId : createForm.id_usuario;
+
+		if (!createForm.id_paciente)  return setCreateError('Debes seleccionar un paciente.');
+		if (!nutricionistaId)         return setCreateError('Debes seleccionar un nutricionista.');
+		if (!createForm.fecha)        return setCreateError('La fecha es requerida.');
+		if (!createForm.hora_inicio)  return setCreateError('Debes seleccionar un horario disponible.');
+
+		setCreateLoading(true);
+
+		const body = {
+			id_paciente: Number(createForm.id_paciente),
+			id_usuario:  Number(nutricionistaId),
+			fecha:       createForm.fecha,
+			hora_inicio: createForm.hora_inicio,
+			hora_fin:    createForm.hora_fin,
+			...(createForm.id_servicio && { id_servicio: Number(createForm.id_servicio) }),
+			...(createForm.observacion  && { observacion: createForm.observacion }),
+		};
+
+		try {
+			const response = await fetch(apiUrl('/citas'), {
+				method:  'POST',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+				body:    JSON.stringify(body),
+			});
+
+			const data = await response.json();
+			if (!response.ok) {
+				setCreateError(data.message || 'Error al crear la cita');
+				return;
+			}
+
+			closeCreateModal();
+			fetchCitas();
+		} catch {
+			setCreateError('Error de conexión con el servidor');
+		} finally {
+			setCreateLoading(false);
+		}
+	};
+
+	const openCancelModal = (cita) => {
+		setCancelCita(cita);
+		setCancelMotivo('');
+		setCancelError('');
+		setCancelOpen(true);
+	};
+
+	const closeCancelModal = () => {
+		setCancelOpen(false);
+		setCancelCita(null);
+		setCancelMotivo('');
+		setCancelError('');
+	};
+
+	const handleCancelSubmit = async (e) => {
+		e.preventDefault();
+		if (cancelMotivo.trim().length < 5)
+			return setCancelError('El motivo debe tener al menos 5 caracteres.');
+
+		setCancelLoading(true);
+		setCancelError('');
+		try {
+			const response = await fetch(apiUrl(`/citas/${cancelCita.id_cita}/cancelar`), {
+				method:  'PATCH',
+				headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+				body:    JSON.stringify({ motivo_cancelacion: cancelMotivo.trim() }),
+			});
+			const data = await response.json();
+			if (!response.ok) {
+				setCancelError(data.message || 'Error al cancelar la cita');
+				return;
+			}
+			closeCancelModal();
+			fetchCitas();
+		} catch {
+			setCancelError('Error de conexión con el servidor');
+		} finally {
+			setCancelLoading(false);
+		}
 	};
 
 	return (
@@ -350,7 +502,7 @@ const Calendario = () => {
 											const style = getCitaStyle(cita.estado);
 											const StatusIcon = style.icon;
 											const patientName = getFullName(cita.paciente) || 'Paciente no disponible';
-											const nutritionistName = getFullName(cita.usuario) || 'Nutricionista';
+											const nutritionistName = getFullName(cita.nutricionista ?? cita.usuario) || 'Nutricionista';
 											const serviceName = cita.servicio?.nombre || cita.origen || 'Consulta';
 											const note = cita.observacion || 'Sin observaciones registradas.';
 
@@ -397,6 +549,17 @@ const Calendario = () => {
 													<p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.45 }}>
 														{note}
 													</p>
+
+													{hasPermission('citas:cancelar') && cita.estado !== 'cancelada' && (
+														<button
+															type="button"
+															onClick={() => openCancelModal(cita)}
+															style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: '#B91C1C', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '5px 10px', cursor: 'pointer' }}
+														>
+															<Ban size={13} />
+															Cancelar cita
+														</button>
+													)}
 												</article>
 											);
 										})
@@ -432,7 +595,7 @@ const Calendario = () => {
 								<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
 									<div className="form-group">
 										<label className="form-label">Fecha</label>
-										<input type="date" className="form-input" value={createForm.fecha} onChange={handleCreateChange('fecha')} required />
+										<input type="date" className="form-input" value={createForm.fecha} onChange={handleFechaChange} required />
 									</div>
 										{isCurrentUserNutricionista ? (
 											<div className="form-group">
@@ -442,19 +605,40 @@ const Calendario = () => {
 										) : (
 											<div className="form-group">
 												<label className="form-label">Nutricionista</label>
-												<input className="form-input" value={createForm.id_usuario} onChange={handleCreateChange('id_usuario')} placeholder="ID del nutricionista" required />
+												<select className="form-input" value={createForm.id_usuario} onChange={handleNutricionistaChange} required>
+													<option value="">Selecciona un nutricionista</option>
+													{nutricionistas.map((n) => (
+														<option key={n.id} value={n.id}>
+															{[n.nombres, n.apellido_paterno, n.apellido_materno].filter(Boolean).join(' ')}
+														</option>
+													))}
+												</select>
+												{nutricionistasLoading && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>Cargando nutricionistas...</div>}
 											</div>
 										)}
 								</div>
-								<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-									<div className="form-group">
-										<label className="form-label">Hora inicio</label>
-										<input type="time" className="form-input" value={createForm.hora_inicio} onChange={handleCreateChange('hora_inicio')} required />
-									</div>
-									<div className="form-group">
-										<label className="form-label">Hora fin</label>
-										<input type="time" className="form-input" value={createForm.hora_fin} onChange={handleCreateChange('hora_fin')} required />
-									</div>
+								<div className="form-group">
+									<label className="form-label">Horario disponible</label>
+									{!createForm.fecha || !(isCurrentUserNutricionista ? currentUserId : createForm.id_usuario) ? (
+										<div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '10px 12px', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+											Selecciona nutricionista y fecha para ver los horarios disponibles.
+										</div>
+									) : slotsLoading ? (
+										<div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '10px 0' }}>Cargando horarios...</div>
+									) : slots.length === 0 ? (
+										<div style={{ fontSize: '13px', color: 'var(--danger)', padding: '10px 12px', border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-sm)' }}>
+											Sin horarios disponibles para esta fecha.
+										</div>
+									) : (
+										<select className="form-input" value={createForm.hora_inicio} onChange={handleSlotChange} required>
+											<option value="">Selecciona un horario</option>
+											{slots.map((s) => (
+												<option key={s.hora_inicio} value={s.hora_inicio}>
+													{s.hora_inicio} – {s.hora_fin}
+												</option>
+											))}
+										</select>
+									)}
 								</div>
 								<div className="form-group">
 									<label className="form-label">Observación</label>
@@ -462,8 +646,53 @@ const Calendario = () => {
 								</div>
 							</div>
 							<div className="modal-footer">
-								<button type="button" className="btn btn-secondary" onClick={closeCreateModal}>Cancelar</button>
-								<button type="submit" className="btn btn-primary">Crear cita</button>
+								<button type="button" className="btn btn-secondary" onClick={closeCreateModal} disabled={createLoading}>Cancelar</button>
+								<button type="submit" className="btn btn-primary" disabled={createLoading}>
+									{createLoading ? 'Creando...' : 'Crear cita'}
+								</button>
+							</div>
+						</form>
+					</div>
+				</div>
+			)}
+
+			{cancelOpen && cancelCita && (
+				<div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && closeCancelModal()}>
+					<div className="modal-content" style={{ maxWidth: '480px' }}>
+						<div className="modal-header">
+							<h3 className="modal-title">Cancelar cita</h3>
+							<button className="btn-close" onClick={closeCancelModal} aria-label="Cerrar">×</button>
+						</div>
+						<form onSubmit={handleCancelSubmit}>
+							<div className="modal-body">
+								{cancelError && (
+									<div className="alert alert-danger" style={{ marginBottom: '16px' }}>
+										<AlertCircle size={18} /><span>{cancelError}</span>
+									</div>
+								)}
+								<p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+									Estás cancelando la cita del <strong>{cancelCita.fecha}</strong> de <strong>{cancelCita.hora_inicio?.substring(0, 5)} – {cancelCita.hora_fin?.substring(0, 5)}</strong>. El horario quedará disponible nuevamente para nuevas reservas.
+								</p>
+								<div className="form-group">
+									<label className="form-label">Motivo de cancelación</label>
+									<textarea
+										className="form-input"
+										rows="3"
+										value={cancelMotivo}
+										onChange={(e) => setCancelMotivo(e.target.value)}
+										placeholder="Escribe el motivo (mínimo 5 caracteres)"
+										required
+									/>
+								</div>
+							</div>
+							<div className="modal-footer">
+								<button type="button" className="btn btn-secondary" onClick={closeCancelModal} disabled={cancelLoading}>
+									Volver
+								</button>
+								<button type="submit" className="btn btn-primary" disabled={cancelLoading} style={{ background: '#EF4444', borderColor: '#EF4444' }}>
+									<Ban size={16} />
+									{cancelLoading ? 'Cancelando...' : 'Confirmar cancelación'}
+								</button>
 							</div>
 						</form>
 					</div>

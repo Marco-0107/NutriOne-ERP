@@ -7,6 +7,7 @@ const formatDisponibilidad = (disp) => ({
     dia_semana:        disp.dia_semana,
     hora_inicio:       disp.hora_inicio,
     hora_fin:          disp.hora_fin,
+    duracion_minutos:  disp.duracion_minutos ?? 30,
     estado:            disp.estado,
     usuario: disp.usuario
         ? {
@@ -36,7 +37,7 @@ const getDisponibilidadService = async (nutricionistaId = null) => {
     return disponibilidades.map(formatDisponibilidad);
 };
 
-const createDisponibilidadService = async (nutricionistaId, { dia_semana, hora_inicio, hora_fin }) => {
+const createDisponibilidadService = async (nutricionistaId, { dia_semana, hora_inicio, hora_fin, duracion_minutos = 30 }) => {
     const repo = AppDataSource.getRepository("Disponibilidad");
     const usuarioRepo = AppDataSource.getRepository("Usuario");
 
@@ -70,6 +71,7 @@ const createDisponibilidadService = async (nutricionistaId, { dia_semana, hora_i
         dia_semana,
         hora_inicio,
         hora_fin,
+        duracion_minutos,
         estado: "activo",
         usuario,
     });
@@ -118,9 +120,10 @@ const updateDisponibilidadService = async (dispId, data) => {
         }
     }
 
-    if (data.dia_semana  !== undefined) disp.dia_semana  = data.dia_semana;
-    if (data.hora_inicio !== undefined) disp.hora_inicio = data.hora_inicio;
-    if (data.hora_fin    !== undefined) disp.hora_fin    = data.hora_fin;
+    if (data.dia_semana       !== undefined) disp.dia_semana       = data.dia_semana;
+    if (data.hora_inicio      !== undefined) disp.hora_inicio      = data.hora_inicio;
+    if (data.hora_fin         !== undefined) disp.hora_fin         = data.hora_fin;
+    if (data.duracion_minutos !== undefined) disp.duracion_minutos = data.duracion_minutos;
 
     await repo.save(disp);
 

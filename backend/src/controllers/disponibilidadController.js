@@ -11,12 +11,12 @@ const getDisponibilidad = async (req, res) => {
     try {
         // If query param nutricionista_id is provided, filter by it
         // Otherwise, if the user is a nutricionista, show only their own
-        let nutricionistaId = req.query.nutricionista_id || null;
-        
-        // If no specific filter and user has nutricionista role, default to own
-        if (!nutricionistaId && req.user.roles && req.user.roles.includes("Nutricionista")) {
-            nutricionistaId = req.user.id;
-        }
+        const esNutricionista = req.user.roles && req.user.roles.includes("Nutricionista");
+
+        // Nutricionistas always see only their own; admins can filter by query param
+        let nutricionistaId = esNutricionista
+            ? req.user.id
+            : (req.query.nutricionista_id || null);
         
         const data = await getDisponibilidadService(nutricionistaId);
         return res.json({ success: true, data });

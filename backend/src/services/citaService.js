@@ -83,6 +83,8 @@ const getCitasService = async (filtros = {}) => {
     if (filtros.id_usuario)  qb.andWhere("usuario.id = :id_usuario",   { id_usuario:  Number(filtros.id_usuario) });
     if (filtros.id_paciente) qb.andWhere("paciente.id = :id_paciente", { id_paciente: Number(filtros.id_paciente) });
     if (filtros.fecha)       qb.andWhere("cita.fecha = :fecha",        { fecha:       filtros.fecha });
+    if (filtros.desde)       qb.andWhere("cita.fecha >= :desde",       { desde:       filtros.desde });
+    if (filtros.hasta)       qb.andWhere("cita.fecha <= :hasta",       { hasta:       filtros.hasta });
 
     qb.orderBy("cita.fecha", "ASC").addOrderBy("cita.hora_inicio", "ASC");
 

@@ -89,7 +89,7 @@ const getDisponibilidadPublicaService = async (nutricionistaId, fecha) => {
 
     let allSlots = [];
     for (const d of disponibilidades) {
-        const slots = generateSlots(d.hora_inicio, d.hora_fin);
+        const slots = generateSlots(d.hora_inicio, d.hora_fin, d.duracion_minutos || 30);
         allSlots = allSlots.concat(slots);
     }
 

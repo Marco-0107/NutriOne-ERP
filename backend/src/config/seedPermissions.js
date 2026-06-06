@@ -101,6 +101,12 @@ const SEED_PERMISSIONS = [
         descripcion: "Permite ver la pestaña de agenda/citas y listar las citas existentes"
     },
     {
+        nombre: "Crear Citas",
+        codigo: "citas:crear",
+        modulo: "Citas",
+        descripcion: "Permite agendar nuevas citas para los pacientes"
+    },
+    {
         nombre: "Editar Citas",
         codigo: "citas:editar",
         modulo: "Citas",

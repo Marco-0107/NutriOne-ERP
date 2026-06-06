@@ -21,10 +21,13 @@ const DIAS_ORDEN = {
     sabado: 6
 };
 
+const DURACIONES = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
+
 const EMPTY_FORM = {
     dia_semana: '',
     hora_inicio: '09:00',
-    hora_fin: '18:00'
+    hora_fin: '18:00',
+    duracion_minutos: 30,
 };
 
 const DisponibilidadManager = () => {
@@ -74,7 +77,7 @@ const DisponibilidadManager = () => {
         setFormError('');
         setFormLoading(true);
 
-        const { dia_semana, hora_inicio, hora_fin } = formData;
+        const { dia_semana, hora_inicio, hora_fin, duracion_minutos } = formData;
         if (!dia_semana || !hora_inicio || !hora_fin) {
             setFormError('Todos los campos son obligatorios.');
             setFormLoading(false);
@@ -94,7 +97,8 @@ const DisponibilidadManager = () => {
                 body: JSON.stringify({
                     dia_semana,
                     hora_inicio,
-                    hora_fin
+                    hora_fin,
+                    duracion_minutos: Number(duracion_minutos),
                 }),
             });
             const data = await res.json();
@@ -212,7 +216,7 @@ const DisponibilidadManager = () => {
                             </select>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                             <div className="form-group">
                                 <label className="form-label" htmlFor="disp-inicio">HORA INICIO</label>
                                 <input
@@ -235,6 +239,21 @@ const DisponibilidadManager = () => {
                                     required
                                 />
                             </div>
+                        </div>
+
+                        <div className="form-group" style={{ marginBottom: '24px' }}>
+                            <label className="form-label" htmlFor="disp-duracion">DURACIÓN DE CADA SESIÓN</label>
+                            <select
+                                id="disp-duracion"
+                                className="form-input"
+                                value={formData.duracion_minutos}
+                                onChange={handleInputChange('duracion_minutos')}
+                                required
+                            >
+                                {DURACIONES.map((min) => (
+                                    <option key={min} value={min}>{min} minutos</option>
+                                ))}
+                            </select>
                         </div>
 
                         <button 
@@ -310,6 +329,9 @@ const DisponibilidadManager = () => {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
                                             <Clock size={16} style={{ color: 'var(--text-muted)' }} />
                                             {disp.hora_inicio.substring(0, 5)} - {disp.hora_fin.substring(0, 5)}
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                            Sesiones de {disp.duracion_minutos ?? 30} min
                                         </div>
                                     </div>
 
