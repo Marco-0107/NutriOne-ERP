@@ -119,12 +119,14 @@ const updateUsuarioSchema = Joi.object({
 });
 
 const assignRolSchema = Joi.object({
-    rol: Joi.string()
-        .min(1).max(100)
+    roles: Joi.array()
+        .items(Joi.string().min(1).max(100))
+        .min(1)
         .required()
         .messages({
-            "any.required": "El rol es requerido",
-            "string.empty": "El rol no puede estar vacío",
+            "any.required": "Debes seleccionar al menos un rol",
+            "array.min":    "Debes seleccionar al menos un rol",
+            "array.base":   "El campo roles debe ser un arreglo",
         }),
 });
 

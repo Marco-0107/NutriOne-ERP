@@ -27,8 +27,11 @@ const getUsuariosService = async () => {
         .orderBy("usuario.id", "ASC")
         .getMany();
     return usuarios.map(u => {
-        const rolActivo = u.usuarioRoles?.find(ur => ur.estado === "activo");
-        return { ...formatUsuario(u), rol: rolActivo?.role?.nombre || null };
+        const rolesActivos = u.usuarioRoles
+            ?.filter(ur => ur.estado === "activo")
+            .map(ur => ur.role?.nombre)
+            .filter(Boolean) || [];
+        return { ...formatUsuario(u), roles: rolesActivos };
     });
 };
 
@@ -117,7 +120,7 @@ const deleteUsuarioService = async (usuarioId) => {
     return { message: "Usuario eliminado con éxito" };
 };
 
-const assignRolService = async (usuarioId, rolInput) => {
+const assignRolService = async (usuarioId, rolesInput) => {
     const usuarioRepo    = AppDataSource.getRepository("Usuario");
     const roleRepo       = AppDataSource.getRepository("Role");
     const usuarioRolRepo = AppDataSource.getRepository("UsuarioRol");
@@ -127,15 +130,19 @@ const assignRolService = async (usuarioId, rolInput) => {
         throw { status: 404, message: "Usuario no encontrado" };
     }
 
-    const role = await roleRepo
-        .createQueryBuilder("role")
-        .where("LOWER(role.nombre) = LOWER(:nombre)", { nombre: rolInput })
-        .andWhere("role.estado = :estado", { estado: "activo" })
-        .getOne();
-
-    if (!role) {
-        throw { status: 400, message: `El rol '${rolInput}' no existe en el sistema` };
-    }
+    const roles = await Promise.all(
+        rolesInput.map(async (nombre) => {
+            const role = await roleRepo
+                .createQueryBuilder("role")
+                .where("LOWER(role.nombre) = LOWER(:nombre)", { nombre })
+                .andWhere("role.estado = :estado", { estado: "activo" })
+                .getOne();
+            if (!role) {
+                throw { status: 400, message: `El rol '${nombre}' no existe en el sistema` };
+            }
+            return role;
+        }),
+    );
 
     const existentes = await usuarioRolRepo.find({
         where: { usuario: { id: usuarioId } },
@@ -144,16 +151,14 @@ const assignRolService = async (usuarioId, rolInput) => {
         await usuarioRolRepo.remove(existentes);
     }
 
-    const nuevaAsignacion = usuarioRolRepo.create({
-        usuario,
-        role,
-        estado: "activo",
-    });
-    await usuarioRolRepo.save(nuevaAsignacion);
+    const nuevasAsignaciones = roles.map(role =>
+        usuarioRolRepo.create({ usuario, role, estado: "activo" }),
+    );
+    await usuarioRolRepo.save(nuevasAsignaciones);
 
     return {
         ...formatUsuario(usuario),
-        rol: role.nombre,
+        roles: roles.map(r => r.nombre),
     };
 };
 

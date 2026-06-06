@@ -88,7 +88,7 @@ const assignRol = async (req, res) => {
     }
 
     try {
-        const usuario = await assignRolService(usuarioId, value.rol);
+        const usuario = await assignRolService(usuarioId, value.roles);
         return res.json({ success: true, data: usuario });
     } catch (err) {
         if (err.status) {
