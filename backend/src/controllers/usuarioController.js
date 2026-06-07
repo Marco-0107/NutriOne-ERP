@@ -1,9 +1,10 @@
-const { createUsuarioSchema, updateUsuarioSchema } = require("../validations/usuarioValidations");
+const { createUsuarioSchema, updateUsuarioSchema, assignRolSchema } = require("../validations/usuarioValidations");
 const {
     getUsuariosService,
     createUsuarioService,
     updateUsuarioService,
     deleteUsuarioService,
+    assignRolService,
 } = require("../services/usuarioService");
 const { badRequest, serverError } = require("../handlers/errorHandler");
 
@@ -74,4 +75,27 @@ const deleteUsuario = async (req, res) => {
     }
 };
 
-module.exports = { getUsuarios, createUsuario, updateUsuario, deleteUsuario };
+const assignRol = async (req, res) => {
+    const usuarioId = parseInt(req.params.id);
+    if (isNaN(usuarioId)) {
+        return badRequest(res, "El ID del usuario debe ser un número válido");
+    }
+
+    const { error, value } = assignRolSchema.validate(req.body, { abortEarly: false });
+    if (error) {
+        const messages = [...new Set(error.details.map(d => d.message))].join(". ");
+        return badRequest(res, messages);
+    }
+
+    try {
+        const usuario = await assignRolService(usuarioId, value.roles);
+        return res.json({ success: true, data: usuario });
+    } catch (err) {
+        if (err.status) {
+            return res.status(err.status).json({ success: false, message: err.message });
+        }
+        return serverError(res, err, "usuarioController.assignRol");
+    }
+};
+
+module.exports = { getUsuarios, createUsuario, updateUsuario, deleteUsuario, assignRol };

@@ -118,4 +118,16 @@ const updateUsuarioSchema = Joi.object({
         }),
 });
 
-module.exports = { createUsuarioSchema, updateUsuarioSchema };
+const assignRolSchema = Joi.object({
+    roles: Joi.array()
+        .items(Joi.string().min(1).max(100))
+        .min(1)
+        .required()
+        .messages({
+            "any.required": "Debes seleccionar al menos un rol",
+            "array.min":    "Debes seleccionar al menos un rol",
+            "array.base":   "El campo roles debe ser un arreglo",
+        }),
+});
+
+module.exports = { createUsuarioSchema, updateUsuarioSchema, assignRolSchema };

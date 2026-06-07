@@ -48,6 +48,11 @@ module.exports = new EntitySchema({
             type: "text",
             nullable: true,
         },
+        origen: {
+            type: "varchar",
+            length: 20,
+            default: "interna",
+        },
     },
     relations: {
         paciente: {
