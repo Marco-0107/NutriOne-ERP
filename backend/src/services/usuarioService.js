@@ -21,10 +21,18 @@ const getUsuariosService = async () => {
     const usuarios = await usuarioRepo
         .createQueryBuilder("usuario")
         .leftJoin("usuario.paciente", "paciente")
+        .leftJoinAndSelect("usuario.usuarioRoles", "usuarioRol")
+        .leftJoinAndSelect("usuarioRol.role", "role")
         .where("paciente.id IS NULL")
         .orderBy("usuario.id", "ASC")
         .getMany();
-    return usuarios.map(formatUsuario);
+    return usuarios.map(u => {
+        const rolesActivos = u.usuarioRoles
+            ?.filter(ur => ur.estado === "activo")
+            .map(ur => ur.role?.nombre)
+            .filter(Boolean) || [];
+        return { ...formatUsuario(u), roles: rolesActivos };
+    });
 };
 
 const createUsuarioService = async ({
@@ -112,9 +120,52 @@ const deleteUsuarioService = async (usuarioId) => {
     return { message: "Usuario eliminado con éxito" };
 };
 
+const assignRolService = async (usuarioId, rolesInput) => {
+    const usuarioRepo    = AppDataSource.getRepository("Usuario");
+    const roleRepo       = AppDataSource.getRepository("Role");
+    const usuarioRolRepo = AppDataSource.getRepository("UsuarioRol");
+
+    const usuario = await usuarioRepo.findOneBy({ id: usuarioId });
+    if (!usuario) {
+        throw { status: 404, message: "Usuario no encontrado" };
+    }
+
+    const roles = await Promise.all(
+        rolesInput.map(async (nombre) => {
+            const role = await roleRepo
+                .createQueryBuilder("role")
+                .where("LOWER(role.nombre) = LOWER(:nombre)", { nombre })
+                .andWhere("role.estado = :estado", { estado: "activo" })
+                .getOne();
+            if (!role) {
+                throw { status: 400, message: `El rol '${nombre}' no existe en el sistema` };
+            }
+            return role;
+        }),
+    );
+
+    const existentes = await usuarioRolRepo.find({
+        where: { usuario: { id: usuarioId } },
+    });
+    if (existentes.length > 0) {
+        await usuarioRolRepo.remove(existentes);
+    }
+
+    const nuevasAsignaciones = roles.map(role =>
+        usuarioRolRepo.create({ usuario, role, estado: "activo" }),
+    );
+    await usuarioRolRepo.save(nuevasAsignaciones);
+
+    return {
+        ...formatUsuario(usuario),
+        roles: roles.map(r => r.nombre),
+    };
+};
+
 module.exports = {
     getUsuariosService,
     createUsuarioService,
     updateUsuarioService,
     deleteUsuarioService,
+    assignRolService,
 };

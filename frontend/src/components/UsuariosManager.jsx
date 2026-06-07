@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Edit2, Trash2, X, UserCog, AlertCircle, CheckCircle2, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, UserCog, AlertCircle, CheckCircle2, Search, Shield } from 'lucide-react';
+
+const ROL_COLORS = [
+    { bg: 'rgba(139,92,246,0.12)', color: '#7c3aed' },
+    { bg: 'rgba(16,185,129,0.12)', color: '#059669' },
+    { bg: 'rgba(59,130,246,0.12)', color: '#2563eb' },
+    { bg: 'rgba(245,158,11,0.12)', color: '#d97706' },
+];
+
+const getRolStyle = (rolNombre, rolesDisponibles) => {
+    const idx = rolesDisponibles.findIndex(r => r.nombre === rolNombre);
+    return ROL_COLORS[idx >= 0 ? idx % ROL_COLORS.length : 0];
+};
 import { apiUrl } from '../helpers/api';
 
 const EMPTY_FORM = {
@@ -26,6 +38,13 @@ const UsuariosManager = () => {
     const [formError, setFormError]           = useState('');
     const [formLoading, setFormLoading]       = useState(false);
 
+    const [isRolModalOpen, setIsRolModalOpen] = useState(false);
+    const [rolTarget, setRolTarget]           = useState(null);
+    const [rolValues, setRolValues]           = useState([]);
+    const [rolLoading, setRolLoading]         = useState(false);
+    const [rolError, setRolError]             = useState('');
+    const [rolesDisponibles, setRolesDisponibles] = useState([]);
+
     const authHeaders = { Authorization: `Bearer ${token}` };
 
     const showSuccess = (msg) => {
@@ -48,7 +67,56 @@ const UsuariosManager = () => {
         }
     };
 
-    useEffect(() => { fetchData(); }, [token]);
+    useEffect(() => {
+        fetchData();
+        fetch(apiUrl('/roles'), { headers: authHeaders })
+            .then(r => r.json())
+            .then(d => { if (d.success) setRolesDisponibles(d.data?.filter(r => r.estado === 'activo') || []); })
+            .catch(() => {});
+    }, [token]);
+
+    // ── Rol modal ──────────────────────────────────────────────────
+    const openRolModal = (usuario) => {
+        setRolTarget(usuario);
+        setRolValues(usuario.roles || []);
+        setRolError('');
+        setIsRolModalOpen(true);
+    };
+
+    const closeRolModal = () => {
+        setIsRolModalOpen(false);
+        setRolTarget(null);
+        setRolError('');
+    };
+
+    const toggleRol = (nombre) => {
+        setRolValues(prev =>
+            prev.includes(nombre) ? prev.filter(r => r !== nombre) : [...prev, nombre],
+        );
+    };
+
+    const handleAssignRol = async (e) => {
+        e.preventDefault();
+        if (rolValues.length === 0) { setRolError('Debes seleccionar al menos un rol'); return; }
+        setRolLoading(true);
+        setRolError('');
+        try {
+            const res  = await fetch(apiUrl(`/usuarios/${rolTarget.id}/rol`), {
+                method:  'PUT',
+                headers: { 'Content-Type': 'application/json', ...authHeaders },
+                body:    JSON.stringify({ roles: rolValues }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.message || 'Error al asignar roles');
+            showSuccess(`Roles actualizados para ${rolTarget.nombres} ${rolTarget.apellido_paterno}.`);
+            closeRolModal();
+            fetchData();
+        } catch (err) {
+            setRolError(err.message || 'Error al procesar la solicitud');
+        } finally {
+            setRolLoading(false);
+        }
+    };
 
     // ── RUT formatter ──────────────────────────────────────────────
     const handleRutChange = (e) => {
@@ -255,7 +323,7 @@ const UsuariosManager = () => {
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
                             <thead>
                                 <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
-                                    {['Usuario', 'RUT', 'Correo', 'Estado', 'Acciones'].map(col => (
+                                    {['Usuario', 'RUT', 'Correo', 'Rol', 'Estado', 'Acciones'].map(col => (
                                         <th key={col} style={{
                                             padding: '12px 16px', textAlign: 'left',
                                             fontWeight: 700, fontSize: '11px', letterSpacing: '0.05em',
@@ -308,6 +376,24 @@ const UsuariosManager = () => {
                                             {usuario.correo || '—'}
                                         </td>
                                         <td style={{ padding: '14px 16px' }}>
+                                            {usuario.roles?.length > 0 ? (
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                                    {usuario.roles.map(rol => (
+                                                        <span key={rol} style={{
+                                                            display: 'inline-flex', alignItems: 'center',
+                                                            padding: '3px 10px', borderRadius: '20px',
+                                                            fontSize: '12px', fontWeight: 600,
+                                                            ...getRolStyle(rol, rolesDisponibles),
+                                                        }}>
+                                                            {rol}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            ) : (
+                                                <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>Sin rol</span>
+                                            )}
+                                        </td>
+                                        <td style={{ padding: '14px 16px' }}>
                                             <span style={{
                                                 display: 'inline-flex', alignItems: 'center', gap: '5px',
                                                 padding: '3px 10px', borderRadius: '20px',
@@ -336,6 +422,15 @@ const UsuariosManager = () => {
                                                         <Edit2 size={13} /> Editar
                                                     </button>
                                                 )}
+                                                {hasPermission('usuarios:editar') && (
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        style={{ padding: '6px 12px', fontSize: '12px', color: '#7c3aed', borderColor: 'rgba(139,92,246,0.3)' }}
+                                                        onClick={() => openRolModal(usuario)}
+                                                    >
+                                                        <Shield size={13} /> Rol
+                                                    </button>
+                                                )}
                                                 {hasPermission('usuarios:eliminar') && (
                                                     <button
                                                         className="btn btn-secondary"
@@ -358,6 +453,87 @@ const UsuariosManager = () => {
                     }}>
                         {usuariosFiltrados.length} usuario{usuariosFiltrados.length !== 1 ? 's' : ''} encontrado{usuariosFiltrados.length !== 1 ? 's' : ''}
                         {searchTerm && ` para "${searchTerm}"`}
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Asignar Rol */}
+            {isRolModalOpen && rolTarget && (
+                <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) closeRolModal(); }}>
+                    <div className="modal-content" style={{ maxWidth: '400px' }}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">
+                                Asignar Rol — {rolTarget.nombres} {rolTarget.apellido_paterno}
+                            </h3>
+                            <button className="btn-close" onClick={closeRolModal} aria-label="Cerrar">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleAssignRol}>
+                            <div className="modal-body">
+                                {rolError && (
+                                    <div className="alert alert-danger" style={{ marginBottom: '16px' }}>
+                                        <AlertCircle size={16} /><span>{rolError}</span>
+                                    </div>
+                                )}
+                                <div className="form-group">
+                                    <label className="form-label">ROLES</label>
+                                    <div style={{
+                                        border: '1px solid var(--border-color)',
+                                        borderRadius: 'var(--radius-sm)',
+                                        padding: '8px 4px',
+                                        maxHeight: '200px',
+                                        overflowY: 'auto',
+                                    }}>
+                                        {rolesDisponibles.length === 0 ? (
+                                            <p style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '8px 12px', margin: 0 }}>
+                                                No hay roles disponibles
+                                            </p>
+                                        ) : rolesDisponibles.map(r => {
+                                            const checked = rolValues.includes(r.nombre);
+                                            const style   = getRolStyle(r.nombre, rolesDisponibles);
+                                            return (
+                                                <label
+                                                    key={r.id_rol}
+                                                    style={{
+                                                        display: 'flex', alignItems: 'center', gap: '10px',
+                                                        padding: '8px 12px', cursor: 'pointer', borderRadius: 'var(--radius-sm)',
+                                                        background: checked ? style.bg : 'transparent',
+                                                        transition: 'background var(--transition-fast)',
+                                                    }}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={checked}
+                                                        onChange={() => toggleRol(r.nombre)}
+                                                        style={{ accentColor: style.color, width: '15px', height: '15px', cursor: 'pointer' }}
+                                                    />
+                                                    <span style={{
+                                                        fontSize: '13px', fontWeight: checked ? 600 : 400,
+                                                        color: checked ? style.color : 'var(--text-primary)',
+                                                    }}>
+                                                        {r.nombre}
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                    {rolValues.length > 0 && (
+                                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', marginBottom: 0 }}>
+                                            {rolValues.length} rol{rolValues.length !== 1 ? 'es' : ''} seleccionado{rolValues.length !== 1 ? 's' : ''}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={closeRolModal} disabled={rolLoading}>
+                                    Cancelar
+                                </button>
+                                <button type="submit" className="btn btn-primary" disabled={rolLoading}>
+                                    {rolLoading ? 'Guardando...' : 'Guardar Roles'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

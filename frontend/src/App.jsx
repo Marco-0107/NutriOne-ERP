@@ -1,13 +1,19 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { GoogleReCaptchaProvider } from 'react-google-recaptcha-v3';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import RolesManager from './components/RolesManager';
+import Calendario from './components/Calendario';
 import PacientesManager from './components/PacientesManager';
 import UsuariosManager from './components/UsuariosManager';
 import AntecedentesMockup from './components/AntecedentesMockup';
+import AgendarPublico from './components/AgendarPublico';
+import DisponibilidadManager from './components/DisponibilidadManager';
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 // Inner App component to access context hooks
 const AppContent = () => {
@@ -35,6 +41,11 @@ const AppContent = () => {
         return (
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/agendar" element={
+                    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
+                        <AgendarPublico />
+                    </GoogleReCaptchaProvider>
+                } />
                 <Route path="*" element={<Navigate to="/login" />} />
             </Routes>
         );
@@ -47,12 +58,18 @@ const AppContent = () => {
                 return 'Panel de Inicio';
             case '/roles':
                 return 'Configuración de Roles';
+            case '/calendario':
+                return 'Calendario Semanal';
             case '/pacientes':
                 return 'Gestión de Pacientes';
             case '/usuarios':
                 return 'Gestión de Usuarios';
             case '/fichas':
                 return 'Fichas Clínicas';
+            case '/disponibilidad':
+                return 'Disponibilidad Horaria';
+            case '/agendar':
+                return 'Agendar Cita';
             default:
                 return 'NutriERP';
         }
@@ -76,11 +93,21 @@ const AppContent = () => {
                         <Route path="/" element={<Dashboard />} />
 
                         <Route path="/fichas" element={<AntecedentesMockup />} />
+
+                        <Route path="/calendario" element={<Calendario />} />
+
+                        <Route path="/agendar" element={<AgendarPublico />} />
                         
                         {hasPermission('roles:ver') ? (
                             <Route path="/roles" element={<RolesManager />} />
                         ) : (
                             <Route path="/roles" element={<Navigate to="/" replace />} />
+                        )}
+
+                        {hasPermission('disponibilidad:ver') ? (
+                            <Route path="/disponibilidad" element={<DisponibilidadManager />} />
+                        ) : (
+                            <Route path="/disponibilidad" element={<Navigate to="/" replace />} />
                         )}
 
                         {hasPermission('pacientes:ver') ? (

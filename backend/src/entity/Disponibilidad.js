@@ -25,6 +25,12 @@ module.exports = new EntitySchema({
             type: "time",
             nullable: false,
         },
+        duracion_minutos: {
+            name: "duracion_minutos",
+            type: "int",
+            nullable: false,
+            default: 30,
+        },
         estado: {
             type: "varchar",
             length: 50,
