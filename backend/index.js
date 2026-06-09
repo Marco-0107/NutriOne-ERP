@@ -10,6 +10,7 @@ const { connectRedis }  = require("./src/config/redisClient");
 
 const express = require("express");
 const cors    = require("cors");
+const morgan  = require("morgan");
 
 // Inicializar Passport (registra la estrategia JWT)
 require("./src/auth/passport.auth");
@@ -20,6 +21,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use(morgan("dev"));
 
 // Rutas principales de la API
 app.use("/api", apiRouter);
