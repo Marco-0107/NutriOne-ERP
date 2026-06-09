@@ -33,6 +33,12 @@ const PORT = parseInt(requireEnv("PORT"), 10);
 const ACCESS_TOKEN_SECRET = requireEnv("ACCESS_TOKEN_SECRET");
 const COOKIE_KEY          = requireEnv("COOKIE_KEY");
 
+// ── Redis (opcional: si no está, la app corre sin caché) ───
+const REDIS_HOST     = process.env.REDIS_HOST     || "127.0.0.1";
+const REDIS_PORT     = parseInt(process.env.REDIS_PORT || "6379", 10);
+const REDIS_PASSWORD = process.env.REDIS_PASSWORD || "";
+const REDIS_DB       = parseInt(process.env.REDIS_DB || "0", 10);
+
 module.exports = {
     DB_HOST,
     DB_PORT,
@@ -43,4 +49,8 @@ module.exports = {
     PORT,
     ACCESS_TOKEN_SECRET,
     COOKIE_KEY,
+    REDIS_HOST,
+    REDIS_PORT,
+    REDIS_PASSWORD,
+    REDIS_DB,
 };

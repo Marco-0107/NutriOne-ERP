@@ -1,5 +1,6 @@
 const { AppDataSource } = require("../config/configDb");
 const bcrypt = require("bcryptjs");
+const { invalidateUserCache } = require("./permisosCacheService");
 
 const formatUsuario = (usuario) => ({
     id:               usuario.id,
@@ -155,6 +156,9 @@ const assignRolService = async (usuarioId, rolesInput) => {
         usuarioRolRepo.create({ usuario, role, estado: "activo" }),
     );
     await usuarioRolRepo.save(nuevasAsignaciones);
+
+    // Los permisos del usuario cambiaron: invalidamos su caché
+    await invalidateUserCache(usuarioId);
 
     return {
         ...formatUsuario(usuario),

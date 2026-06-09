@@ -3,6 +3,10 @@ const { AppDataSource } = require("../config/configDb");
 const { ACCESS_TOKEN_SECRET } = require("../config/configEnv");
 const { extractPermisos, extractRoles, buildUserPayload } = require("../helpers/authHelpers");
 const { unauthorized, serverError } = require("../handlers/errorHandler");
+const {
+    getUserPayloadFromCache,
+    setUserPayloadInCache
+} = require("../services/permisosCacheService");
 
 /** Relaciones necesarias para cargar al usuario con roles y permisos */
 const USER_RELATIONS = {
@@ -18,9 +22,14 @@ const USER_RELATIONS = {
 /**
  * Middleware de Autenticación JWT
  *
- * Verifica el token Bearer en el header Authorization,
- * carga el usuario desde la base de datos con sus roles y permisos activos,
- * y los adjunta a req.user para que estén disponibles en controllers.
+ * Verifica el token Bearer en el header Authorization.
+ *
+ * Flujo optimizado con caché Redis:
+ *   1. Decodifica el JWT.
+ *   2. Intenta leer el payload del usuario (roles + permisos) desde Redis.
+ *   3. Si hay HIT → adjunta a req.user y continúa (sin tocar la BD).
+ *   4. Si hay MISS → carga el usuario completo desde la BD,
+ *      reconstruye el payload, lo guarda en Redis con TTL y continúa.
  */
 const authMiddleware = async (req, res, next) => {
     try {
@@ -43,7 +52,14 @@ const authMiddleware = async (req, res, next) => {
             return unauthorized(res, "Sesión inválida o expirada. Por favor, inicia sesión nuevamente.");
         }
 
-        // 3. Cargar usuario activo con sus relaciones desde la DB
+        // 3. Intentar leer el payload desde Redis (camino rápido)
+        const cached = await getUserPayloadFromCache(decoded.id);
+        if (cached) {
+            req.user = cached;
+            return next();
+        }
+
+        // 4. MISS → cargar usuario activo con relaciones desde la BD
         const usuarioRepo = AppDataSource.getRepository("Usuario");
         const user = await usuarioRepo.findOne({
             where:     { id: decoded.id, estado: "activo" },
@@ -54,13 +70,15 @@ const authMiddleware = async (req, res, next) => {
             return unauthorized(res, "Usuario no encontrado o inactivo");
         }
 
-        // 4. Extraer permisos y roles usando helpers
+        // 5. Extraer permisos y roles, construir payload
         const permisos = extractPermisos(user.usuarioRoles);
         const roles    = extractRoles(user.usuarioRoles);
+        const payload  = buildUserPayload(user, permisos, roles);
 
-        // 5. Adjuntar payload al request
-        req.user = buildUserPayload(user, permisos, roles);
+        // 6. Cachear para próximas requests (no esperamos errores: best-effort)
+        await setUserPayloadInCache(user.id, payload);
 
+        req.user = payload;
         next();
     } catch (error) {
         return serverError(res, error, "authMiddleware");
