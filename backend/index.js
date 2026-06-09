@@ -6,6 +6,7 @@ require("reflect-metadata");
 const { HOST, PORT } = require("./src/config/configEnv");
 const { AppDataSource } = require("./src/config/configDb");
 const { seedDatabase }  = require("./src/config/seeds");
+const { connectRedis }  = require("./src/config/redisClient");
 
 const express = require("express");
 const cors    = require("cors");
@@ -39,6 +40,9 @@ AppDataSource.initialize()
         console.log("=> Conexión exitosa a la base de datos!");
 
         await seedDatabase(AppDataSource);
+
+        // Conectar Redis (no bloqueante: si falla, la app sigue sin caché)
+        await connectRedis();
 
         app.listen(PORT, () => {
             console.log(`=> Servidor corriendo en http://${HOST}:${PORT}`);
