@@ -193,6 +193,14 @@ body {
   font-family: inherit;
   font-size: 15px;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  box-sizing: border-box;
+}
+
+textarea.form-input {
+  resize: vertical;
+  max-width: 100%;
+  min-height: 60px;
+  max-height: 300px;
 }
 
 .form-input:focus {
@@ -681,11 +689,21 @@ body {
   border: none;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: color var(--transition-fast);
+  transition: color var(--transition-fast), background var(--transition-fast);
+  font-size: 22px;
+  line-height: 1;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
 }
 
 .btn-close:hover {
   color: var(--text-primary);
+  background: var(--border-color);
 }
 
 .modal-body {

@@ -9,9 +9,10 @@ import RolesManager from './components/RolesManager';
 import Calendario from './components/Calendario';
 import PacientesManager from './components/PacientesManager';
 import UsuariosManager from './components/UsuariosManager';
-import AntecedentesMockup from './components/AntecedentesMockup';
+
 import AgendarPublico from './components/AgendarPublico';
 import DisponibilidadManager from './components/DisponibilidadManager';
+import RegistroPaciente from './components/RegistroPaciente';
 import BasesNutricionales from './components/BasesNutricionales';
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
@@ -65,8 +66,9 @@ const AppContent = () => {
                 return 'Gestión de Pacientes';
             case '/usuarios':
                 return 'Gestión de Usuarios';
-            case '/fichas':
-                return 'Fichas Clínicas';
+
+            case '/registro-paciente':
+                return 'Registro de Paciente';
             case '/disponibilidad':
                 return 'Disponibilidad Horaria';
             case '/nutricion':
@@ -94,14 +96,25 @@ const AppContent = () => {
                 <main className="content-container">
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
-
+                          
                         <Route path="/fichas" element={<AntecedentesMockup />} />
 
                         <Route path="/nutricion" element={<BasesNutricionales />} />
-
+                          
                         <Route path="/calendario" element={<Calendario />} />
 
                         <Route path="/agendar" element={<AgendarPublico />} />
+
+                        <Route
+                            path="/registro-paciente"
+                            element={
+                                hasPermission('pacientes:crear') ? (
+                                    <RegistroPaciente />
+                                ) : (
+                                    <Navigate to="/" replace />
+                                )
+                            }
+                        />
                         
                         {hasPermission('roles:ver') ? (
                             <Route path="/roles" element={<RolesManager />} />
