@@ -96,8 +96,6 @@ const AppContent = () => {
                 <main className="content-container">
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
-                          
-                        <Route path="/fichas" element={<AntecedentesMockup />} />
 
                         <Route path="/nutricion" element={<BasesNutricionales />} />
                           
