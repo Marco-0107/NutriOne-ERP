@@ -9,7 +9,7 @@ import RolesManager from './components/RolesManager';
 import Calendario from './components/Calendario';
 import PacientesManager from './components/PacientesManager';
 import UsuariosManager from './components/UsuariosManager';
-import AntecedentesMockup from './components/AntecedentesMockup';
+
 import AgendarPublico from './components/AgendarPublico';
 import DisponibilidadManager from './components/DisponibilidadManager';
 import RegistroPaciente from './components/RegistroPaciente';
@@ -65,8 +65,7 @@ const AppContent = () => {
                 return 'Gestión de Pacientes';
             case '/usuarios':
                 return 'Gestión de Usuarios';
-            case '/fichas':
-                return 'Fichas Clínicas';
+
             case '/registro-paciente':
                 return 'Registro de Paciente';
             case '/disponibilidad':
@@ -94,8 +93,6 @@ const AppContent = () => {
                 <main className="content-container">
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
-
-                        <Route path="/fichas" element={<AntecedentesMockup />} />
 
                         <Route path="/calendario" element={<Calendario />} />
 
