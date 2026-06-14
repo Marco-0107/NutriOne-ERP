@@ -93,6 +93,24 @@ const SEED_PERMISSIONS = [
         modulo: "Fichas Clinicas",
         descripcion: "Permite acceder a la sección de fichas clínicas y visualizar los registros"
     },
+    {
+        nombre: "Iniciar atención",
+        codigo: "fichas:crear",
+        modulo: "Fichas Clinicas",
+        descripcion: "Permite iniciar una atención médica creando una nueva ficha clínica para una cita"
+    },
+    {
+        nombre: "Editar atención",
+        codigo: "fichas:editar",
+        modulo: "Fichas Clinicas",
+        descripcion: "Permite editar una ficha clínica ya registrada"
+    },
+    {
+        nombre: "Eliminar atención",
+        codigo: "fichas:eliminar",
+        modulo: "Fichas Clinicas",
+        descripcion: "Permite eliminar una ficha clínica del sistema"
+    },
     // ─────────────── Módulo: Citas ───────────────
     {
         nombre: "Ver Pestaña de Citas",
@@ -111,6 +129,12 @@ const SEED_PERMISSIONS = [
         codigo: "citas:editar",
         modulo: "Citas",
         descripcion: "Permite editar citas existentes"
+    },
+    {
+        nombre: "Eliminar Citas",
+        codigo: "citas:eliminar",
+        modulo: "Citas",
+        descripcion: "Permite eliminar citas del sistema"
     },
     {
         nombre: "Cancelar Citas",

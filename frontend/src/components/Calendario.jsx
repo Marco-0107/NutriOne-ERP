@@ -1,16 +1,23 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
 	AlertCircle,
 	Ban,
 	CalendarDays,
+	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
 	CircleCheckBig,
 	Clock3,
+	ClipboardPlus,
+	Calculator,
+	Apple,
 	MapPin,
 	Plus,
 	Sparkles,
+	UserRoundPlus,
 	UserRound,
+	Weight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
@@ -68,6 +75,7 @@ const getFullName = (person) => {
 
 const Calendario = () => {
 	const { token, user, hasPermission } = useAuth();
+	const navigate = useNavigate();
 	const [weekAnchor, setWeekAnchor] = useState(() => new Date());
 	const [citas, setCitas] = useState([]);
 	const [pacientes, setPacientes] = useState([]);
@@ -88,6 +96,38 @@ const Calendario = () => {
 	const [cancelMotivo, setCancelMotivo] = useState('');
 	const [cancelLoading, setCancelLoading] = useState(false);
 	const [cancelError, setCancelError] = useState('');
+
+	// ── Atención médica (Ficha Clínica) ──────────────────────────────────────
+	const INITIAL_ATENCION_FORM = {
+		tipo: 'Control nutricional',
+		fecha_atencion: '',
+		edad: '',
+		nombre_social: '',
+		sexo: '',
+		peso: '',
+		talla: '',
+		presion_arterial: '',
+		circunferencia_cintura: '',
+		motivo_consulta: '',
+		diagnostico_nutricional: '',
+		calculos: '',
+		indicaciones: '',
+		recomendaciones: '',
+		derivaciones: '',
+		observacion: '',
+	};
+	const [atencionOpen, setAtencionOpen] = useState(false);
+	const [atencionCita, setAtencionCita] = useState(null);
+	const [atencionFicha, setAtencionFicha] = useState(null); // ficha existente o null
+	const [atencionForm, setAtencionForm] = useState(INITIAL_ATENCION_FORM);
+	const [atencionLoading, setAtencionLoading] = useState(false);
+	const [atencionFetchLoading, setAtencionFetchLoading] = useState(false);
+	const [atencionError, setAtencionError] = useState('');
+	const [atencionSuccess, setAtencionSuccess] = useState(false);
+	const [usaNombreSocial, setUsaNombreSocial] = useState(false);
+	const [panelCalculadoraOpen, setPanelCalculadoraOpen] = useState(false);
+	const [panelAlimentosOpen, setPanelAlimentosOpen] = useState(false);
+
 	const daysScrollRef = useRef(null);
 
 	const weekStart = useMemo(() => getWeekStart(weekAnchor), [weekAnchor]);
@@ -331,6 +371,131 @@ const Calendario = () => {
 		}
 	};
 
+	// ── Handlers: Atención Médica ────────────────────────────────────────────
+	const openAtencionModal = async (cita) => {
+		setAtencionCita(cita);
+		setAtencionError('');
+		setAtencionSuccess(false);
+		setAtencionFicha(null);
+		const today = new Date().toISOString().split('T')[0];
+		setAtencionForm({
+			...INITIAL_ATENCION_FORM,
+			fecha_atencion: cita.fecha || today,
+		});
+		setAtencionOpen(true);
+
+		// Intentar cargar ficha existente
+		setAtencionFetchLoading(true);
+		try {
+			const res = await fetch(apiUrl(`/fichas/cita/${cita.id_cita}`), {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			const data = await res.json();
+			if (res.ok && data.data) {
+				const f = data.data;
+				setAtencionFicha(f);
+				// Si la ficha ya tiene nombre social, activar el toggle automáticamente
+				if (f.nombre_social) setUsaNombreSocial(true);
+				setAtencionForm({
+					tipo:                    f.tipo                    ?? 'Control nutricional',
+					fecha_atencion:          f.fecha_atencion           ?? cita.fecha ?? today,
+					edad:                    f.edad                    ?? '',
+					nombre_social:           f.nombre_social            ?? '',
+					sexo:                    f.sexo                    ?? '',
+					peso:                    f.peso                    ?? '',
+					talla:                   f.talla                   ?? '',
+					presion_arterial:        f.presion_arterial         ?? '',
+					circunferencia_cintura:  f.circunferencia_cintura   ?? '',
+					motivo_consulta:         f.motivo_consulta          ?? '',
+					diagnostico_nutricional: f.diagnostico_nutricional  ?? '',
+					calculos:                f.calculos                 ?? '',
+					indicaciones:            f.indicaciones             ?? '',
+					recomendaciones:         f.recomendaciones          ?? '',
+					derivaciones:            f.derivaciones             ?? '',
+					observacion:             f.observacion              ?? '',
+				});
+			}
+		} catch { /* silencioso */ } finally {
+			setAtencionFetchLoading(false);
+		}
+	};
+
+	const closeAtencionModal = () => {
+		setAtencionOpen(false);
+		setAtencionCita(null);
+		setAtencionFicha(null);
+		setAtencionError('');
+		setAtencionSuccess(false);
+		setUsaNombreSocial(false);
+		setPanelCalculadoraOpen(false);
+		setPanelAlimentosOpen(false);
+	};
+
+	const handleAtencionChange = (field) => (e) =>
+		setAtencionForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+	const handleAtencionSubmit = async (e) => {
+		e.preventDefault();
+		setAtencionError('');
+
+		if (!atencionForm.tipo.trim())            return setAtencionError('El tipo de atención es requerido.');
+		if (!atencionForm.fecha_atencion)          return setAtencionError('La fecha de atención es requerida.');
+		if (!String(atencionForm.edad).trim())     return setAtencionError('La edad del paciente es requerida.');
+
+		setAtencionLoading(true);
+		try {
+			const body = {
+				tipo:                    atencionForm.tipo.trim(),
+				fecha_atencion:          atencionForm.fecha_atencion,
+				edad:                    Number(atencionForm.edad),
+				...(atencionForm.nombre_social.trim()            && { nombre_social:           atencionForm.nombre_social.trim() }),
+				...(atencionForm.sexo                            && { sexo:                    atencionForm.sexo }),
+				...(atencionForm.peso                            && { peso:                    parseFloat(atencionForm.peso) }),
+				...(atencionForm.talla                           && { talla:                   parseFloat(atencionForm.talla) }),
+				...(atencionForm.presion_arterial.trim()         && { presion_arterial:         atencionForm.presion_arterial.trim() }),
+				...(atencionForm.circunferencia_cintura          && { circunferencia_cintura:   parseFloat(atencionForm.circunferencia_cintura) }),
+				...(atencionForm.motivo_consulta.trim()          && { motivo_consulta:         atencionForm.motivo_consulta.trim() }),
+				...(atencionForm.diagnostico_nutricional.trim()  && { diagnostico_nutricional:  atencionForm.diagnostico_nutricional.trim() }),
+				...(atencionForm.calculos.trim()                 && { calculos:                 atencionForm.calculos.trim() }),
+				...(atencionForm.indicaciones.trim()             && { indicaciones:             atencionForm.indicaciones.trim() }),
+				...(atencionForm.recomendaciones.trim()          && { recomendaciones:          atencionForm.recomendaciones.trim() }),
+				...(atencionForm.derivaciones.trim()             && { derivaciones:             atencionForm.derivaciones.trim() }),
+				...(atencionForm.observacion.trim()              && { observacion:              atencionForm.observacion.trim() }),
+			};
+
+			let res;
+			if (atencionFicha) {
+				// Actualizar ficha existente
+				res = await fetch(apiUrl(`/fichas/${atencionFicha.id_ficha}`), {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+					body: JSON.stringify(body),
+				});
+			} else {
+				// Crear nueva ficha
+				res = await fetch(apiUrl(`/fichas/cita/${atencionCita.id_cita}`), {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+					body: JSON.stringify(body),
+				});
+			}
+
+			const data = await res.json();
+			if (!res.ok) {
+				setAtencionError(data.message || 'Error al guardar la ficha clínica.');
+				return;
+			}
+
+			setAtencionSuccess(true);
+			fetchCitas(); // refrescar calendario para reflejar el nuevo estado
+		} catch {
+			setAtencionError('Error de conexión con el servidor.');
+		} finally {
+			setAtencionLoading(false);
+		}
+	};
+
+	// ── Handlers: Cancelar Cita ──────────────────────────────────────────────
 	const openCancelModal = (cita) => {
 		setCancelCita(cita);
 		setCancelMotivo('');
@@ -395,6 +560,18 @@ const Calendario = () => {
 						Siguiente
 						<ChevronRight size={18} />
 					</button>
+					{hasPermission('pacientes:crear') && (
+						<button
+							className="btn btn-secondary"
+							type="button"
+							id="btn-registrar-paciente"
+							onClick={() => navigate('/registro-paciente')}
+							style={{ border: '1px solid var(--morado-secundario)', color: 'var(--morado-primario)' }}
+						>
+							<UserRoundPlus size={18} />
+							Registrar Paciente
+						</button>
+					)}
 					{hasPermission('citas:crear') && (
 						<button className="btn btn-primary" type="button" onClick={() => openCreateModal()}>
 							<Plus size={18} />
@@ -550,16 +727,49 @@ const Calendario = () => {
 														{note}
 													</p>
 
-													{hasPermission('citas:cancelar') && cita.estado !== 'cancelada' && (
-														<button
-															type="button"
-															onClick={() => openCancelModal(cita)}
-															style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: '#B91C1C', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '5px 10px', cursor: 'pointer' }}
-														>
-															<Ban size={13} />
-															Cancelar cita
-														</button>
-													)}
+													{/* ── Acciones de la tarjeta ── */}
+													<div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+														{/* Iniciar atención: requiere fichas:crear (cita pendiente) o fichas:editar (ya completada) */}
+														{cita.estado !== 'cancelada' && (
+															(cita.estado === 'completada'
+																? hasPermission('fichas:editar')
+																: hasPermission('fichas:crear')
+															) && (
+																<button
+																	type="button"
+																	onClick={() => openAtencionModal(cita)}
+																	style={{
+																		alignSelf: 'flex-start',
+																		display: 'inline-flex',
+																		alignItems: 'center',
+																		gap: '5px',
+																		fontSize: '12px',
+																		fontWeight: 600,
+																		color: cita.estado === 'completada' ? '#0F766E' : '#6D28D9',
+																		background: cita.estado === 'completada' ? 'rgba(20,184,166,0.10)' : 'rgba(109,40,217,0.08)',
+																		border: cita.estado === 'completada' ? '1px solid rgba(20,184,166,0.25)' : '1px solid rgba(109,40,217,0.20)',
+																		borderRadius: '8px',
+																		padding: '5px 10px',
+																		cursor: 'pointer',
+																		transition: 'all 0.15s',
+																	}}
+																>
+																	<ClipboardPlus size={13} />
+																	{cita.estado === 'completada' ? 'Ver atención' : 'Iniciar atención'}
+																</button>
+															)
+														)}
+														{hasPermission('citas:cancelar') && cita.estado !== 'cancelada' && (
+															<button
+																type="button"
+																onClick={() => openCancelModal(cita)}
+																style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: '#B91C1C', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '5px 10px', cursor: 'pointer' }}
+															>
+																<Ban size={13} />
+																Cancelar cita
+															</button>
+														)}
+													</div>
 												</article>
 											);
 										})
@@ -695,6 +905,246 @@ const Calendario = () => {
 								</button>
 							</div>
 						</form>
+					</div>
+				</div>
+			)}
+
+			{/* ══════════════════ MODAL: ATENCIÓN MÉDICA ══════════════════ */}
+			{atencionOpen && atencionCita && (
+				<div className="modal-overlay">
+					<div className="modal-content" style={{ maxWidth: '740px' }}>
+						<div className="modal-header">
+							<div>
+								<h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+									<ClipboardPlus size={20} color="var(--morado-primario)" />
+									{atencionFicha ? 'Ficha clínica registrada' : 'Iniciar atención médica'}
+								</h3>
+								<p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
+									Paciente:&nbsp;
+									<strong style={{ color: 'var(--text-primary)' }}>
+										{getFullName(atencionCita.paciente) || 'Paciente no disponible'}
+									</strong>
+									&nbsp;·&nbsp;{atencionCita.fecha}&nbsp;
+									{atencionCita.hora_inicio?.substring(0, 5)} – {atencionCita.hora_fin?.substring(0, 5)}
+								</p>
+							</div>
+							<button className="btn-close" onClick={closeAtencionModal} aria-label="Cerrar">×</button>
+						</div>
+
+						{atencionFetchLoading ? (
+							<div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+								<Clock3 size={28} style={{ marginBottom: '10px', opacity: 0.5 }} />
+								<div>Cargando ficha clínica...</div>
+							</div>
+						) : atencionSuccess ? (
+							<div style={{ padding: '48px 32px', textAlign: 'center' }}>
+								<div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(20,184,166,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+									<CircleCheckBig size={32} color="#14B8A6" />
+								</div>
+								<h4 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
+									{atencionFicha ? 'Ficha actualizada correctamente' : 'Atención registrada correctamente'}
+								</h4>
+								<p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '24px' }}>
+									La ficha clínica ha sido guardada. La cita ahora figura como <strong>completada</strong>.
+								</p>
+								<button className="btn btn-primary" onClick={closeAtencionModal}>
+									Cerrar
+								</button>
+							</div>
+						) : (
+							<form onSubmit={handleAtencionSubmit}>
+								<div className="modal-body">
+									{atencionError && (
+										<div className="alert alert-danger" style={{ marginBottom: '16px' }}>
+											<AlertCircle size={18} /><span>{atencionError}</span>
+										</div>
+									)}
+
+									{/* Tipo y fecha — encabezado de datos generales */}
+									<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+										<div className="form-group" style={{ marginBottom: 0 }}>
+											<label className="form-label">Tipo de atención <span style={{ color: 'var(--danger)' }}>*</span></label>
+											<select id="at-tipo" className="form-input" value={atencionForm.tipo} onChange={handleAtencionChange('tipo')} required>
+												<option value="Control nutricional">Control nutricional</option>
+												<option value="Evaluación inicial">Evaluación inicial</option>
+												<option value="Control metabólico">Control metabólico</option>
+												<option value="Seguimiento">Seguimiento</option>
+												<option value="Urgencia">Urgencia</option>
+												<option value="Otro">Otro</option>
+											</select>
+										</div>
+										<div className="form-group" style={{ marginBottom: 0 }}>
+											<label className="form-label">Fecha de atención <span style={{ color: 'var(--danger)' }}>*</span></label>
+											<input id="at-fecha" type="date" className="form-input" value={atencionForm.fecha_atencion} onChange={handleAtencionChange('fecha_atencion')} required />
+										</div>
+									</div>
+
+									{/* ══ SECCIÓN 1: DATOS PERSONALES ══ */}
+									<div style={{ background: 'var(--lavanda-suave)', borderRadius: 'var(--radius-md)', padding: '10px 16px', marginBottom: '16px', fontSize: '12px', fontWeight: 800, color: 'var(--morado-primario)', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+										<UserRound size={14} />
+										Datos personales
+									</div>
+									<div className="form-group" style={{ marginBottom: '8px' }}>
+										<label className="form-label">Nombre completo</label>
+										<input
+											type="text"
+											className="form-input"
+											value={getFullName(atencionCita.paciente) || ''}
+											readOnly
+											disabled
+											style={{ background: 'var(--bg-base)', color: 'var(--text-secondary)', cursor: 'not-allowed' }}
+										/>
+									</div>
+									{/* Toggle nombre social */}
+									<div style={{ marginBottom: usaNombreSocial ? '8px' : '14px' }}>
+										<label
+											htmlFor="toggle-nombre-social"
+											style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none', fontSize: '13px', color: usaNombreSocial ? 'var(--morado-primario)' : 'var(--text-muted)', fontWeight: usaNombreSocial ? 700 : 500, transition: 'color 0.2s' }}
+										>
+											<input
+												id="toggle-nombre-social"
+												type="checkbox"
+												checked={usaNombreSocial}
+												onChange={(e) => {
+													setUsaNombreSocial(e.target.checked);
+													if (!e.target.checked) setAtencionForm((prev) => ({ ...prev, nombre_social: '' }));
+												}}
+												style={{ accentColor: 'var(--morado-primario)', width: '15px', height: '15px', cursor: 'pointer' }}
+											/>
+											El paciente usa nombre social
+										</label>
+									</div>
+									{usaNombreSocial && (
+										<div className="form-group" style={{ marginBottom: '14px', animation: 'slideIn 0.2s ease-out' }}>
+											<label className="form-label">Nombre social</label>
+											<input
+												id="at-nombre-social"
+												type="text"
+												className="form-input"
+												placeholder="Nombre por el que prefiere ser llamado/a"
+												value={atencionForm.nombre_social}
+												onChange={handleAtencionChange('nombre_social')}
+												autoFocus
+											/>
+										</div>
+									)}
+									<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+										<div className="form-group" style={{ marginBottom: 0 }}>
+											<label className="form-label">Sexo</label>
+											<select id="at-sexo" className="form-input" value={atencionForm.sexo} onChange={handleAtencionChange('sexo')}>
+												<option value="">Seleccionar</option>
+												<option value="Femenino">Femenino</option>
+												<option value="Masculino">Masculino</option>
+												<option value="Otro">Otro</option>
+												<option value="Prefiero no indicar">Prefiero no indicar</option>
+											</select>
+										</div>
+										<div className="form-group" style={{ marginBottom: 0 }}>
+											<label className="form-label">Edad <span style={{ color: 'var(--danger)' }}>*</span></label>
+											<input id="at-edad" type="number" min="0" max="120" className="form-input" placeholder="Ej: 34" value={atencionForm.edad} onChange={handleAtencionChange('edad')} required />
+										</div>
+									</div>
+
+									{/* ══ SECCIÓN 2: DATOS DE ATENCIÓN ══ */}
+									<div style={{ background: 'rgba(20,184,166,0.07)', borderRadius: 'var(--radius-md)', padding: '10px 16px', marginBottom: '16px', fontSize: '12px', fontWeight: 800, color: '#0F766E', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+										<Weight size={14} />
+										Datos de atención
+									</div>
+									<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+										<div className="form-group" style={{ marginBottom: 0 }}>
+											<label className="form-label">Peso (kg)</label>
+											<input id="at-peso" type="number" step="0.01" min="0" className="form-input" placeholder="Ej: 72.5" value={atencionForm.peso} onChange={handleAtencionChange('peso')} />
+										</div>
+										<div className="form-group" style={{ marginBottom: 0 }}>
+											<label className="form-label">Talla (cm)</label>
+											<input id="at-talla" type="number" step="0.1" min="0" className="form-input" placeholder="Ej: 168.0" value={atencionForm.talla} onChange={handleAtencionChange('talla')} />
+										</div>
+										<div className="form-group" style={{ marginBottom: 0 }}>
+											<label className="form-label">Presión arterial</label>
+											<input id="at-presion" type="text" className="form-input" placeholder="Ej: 120/80" value={atencionForm.presion_arterial} onChange={handleAtencionChange('presion_arterial')} />
+										</div>
+										<div className="form-group" style={{ marginBottom: 0 }}>
+											<label className="form-label">Circunferencia de cintura (cm)</label>
+											<input id="at-cintura" type="number" step="0.1" min="0" className="form-input" placeholder="Ej: 88.5" value={atencionForm.circunferencia_cintura} onChange={handleAtencionChange('circunferencia_cintura')} />
+										</div>
+									</div>
+
+									{/* ══ PANEL: CALCULADORA ANTROPOMÉTRICA (placeholder) ══ */}
+									<div style={{ border: '1px solid rgba(109,40,217,0.18)', borderRadius: 'var(--radius-md)', marginBottom: '14px', overflow: 'hidden' }}>
+										<button
+											type="button"
+											onClick={() => setPanelCalculadoraOpen((v) => !v)}
+											style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', background: 'rgba(109,40,217,0.05)', border: 'none', cursor: 'pointer', gap: '10px' }}
+										>
+											<span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 800, color: 'var(--morado-primario)', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+												<Calculator size={14} />
+												Calculadora antropométrica
+											</span>
+											<ChevronDown size={16} color="var(--morado-primario)" style={{ transition: 'transform 0.2s', transform: panelCalculadoraOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+										</button>
+										{panelCalculadoraOpen && (
+											<div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: 'var(--bg-card)' }}>
+												<Calculator size={32} color="var(--morado-primario)" style={{ opacity: 0.25 }} />
+												<p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
+													<strong style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>Próximamente</strong>
+													Cálculos de IMC, GET, peso ideal, % grasa corporal y más,<br />utilizando los datos de atención registrados arriba.
+												</p>
+											</div>
+										)}
+									</div>
+
+									{/* ══ PANEL: CONSULTA DE ALIMENTOS (placeholder) ══ */}
+									<div style={{ border: '1px solid rgba(34,197,94,0.20)', borderRadius: 'var(--radius-md)', marginBottom: '22px', overflow: 'hidden' }}>
+										<button
+											type="button"
+											onClick={() => setPanelAlimentosOpen((v) => !v)}
+											style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '11px 16px', background: 'rgba(34,197,94,0.05)', border: 'none', cursor: 'pointer', gap: '10px' }}
+										>
+											<span style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 800, color: '#15803D', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+												<Apple size={14} />
+												Consulta de valores nutricionales
+											</span>
+											<ChevronDown size={16} color="#15803D" style={{ transition: 'transform 0.2s', transform: panelAlimentosOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+										</button>
+										{panelAlimentosOpen && (
+											<div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: 'var(--bg-card)' }}>
+												<Apple size={32} color="#15803D" style={{ opacity: 0.25 }} />
+												<p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
+													<strong style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>Próximamente</strong>
+													Búsqueda de alimentos con valores nutricionales<br />(calorías, proteínas, carbohidratos, grasas, etc.)
+												</p>
+											</div>
+										)}
+									</div>
+
+									{/* ══ SECCIÓN 3: CONCLUSIONES ══ */}
+									<div style={{ background: 'rgba(245,158,11,0.08)', borderRadius: 'var(--radius-md)', padding: '10px 16px', marginBottom: '16px', fontSize: '12px', fontWeight: 800, color: '#92400E', display: 'flex', alignItems: 'center', gap: '8px', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
+										<ClipboardPlus size={14} />
+										Conclusiones de la cita
+									</div>
+									<div className="form-group" style={{ marginBottom: '14px' }}>
+										<label className="form-label">Recomendaciones</label>
+										<textarea id="at-recomendaciones" className="form-input" rows="3" placeholder="Recomendaciones generales para el paciente..." value={atencionForm.recomendaciones} onChange={handleAtencionChange('recomendaciones')} />
+									</div>
+									<div className="form-group" style={{ marginBottom: '14px' }}>
+										<label className="form-label">Indicaciones</label>
+										<textarea id="at-indicaciones" className="form-input" rows="3" placeholder="Plan alimentario, indicaciones clínicas, próxima consulta..." value={atencionForm.indicaciones} onChange={handleAtencionChange('indicaciones')} />
+									</div>
+									<div className="form-group" style={{ marginBottom: 0 }}>
+										<label className="form-label">Derivaciones</label>
+										<textarea id="at-derivaciones" className="form-input" rows="2" placeholder="Derivaciones a otros especialistas (médico, psicólogo, kinesiólogo...)" value={atencionForm.derivaciones} onChange={handleAtencionChange('derivaciones')} />
+									</div>
+								</div>
+
+								<div className="modal-footer">
+									<button type="button" className="btn btn-secondary" onClick={closeAtencionModal} disabled={atencionLoading}>Cancelar</button>
+									<button id="at-submit" type="submit" className="btn btn-primary" disabled={atencionLoading}>
+										<ClipboardPlus size={16} />
+										{atencionLoading ? 'Guardando...' : atencionFicha ? 'Actualizar ficha' : 'Guardar atención'}
+									</button>
+								</div>
+							</form>
+						)}
 					</div>
 				</div>
 			)}

@@ -1,4 +1,18 @@
 const { AppDataSource } = require("../config/configDb");
+const { invalidateManyUsersCache } = require("./permisosCacheService");
+
+/**
+ * Devuelve los ids de usuarios que tienen asignado un rol específico.
+ * Se usa para invalidar el caché de permisos cuando un rol cambia.
+ */
+const getUserIdsByRole = async (roleId) => {
+    const usuarioRolRepo = AppDataSource.getRepository("UsuarioRol");
+    const rels = await usuarioRolRepo.find({
+        where:     { role: { id_rol: roleId } },
+        relations: { usuario: true }
+    });
+    return rels.map(r => r.usuario?.id).filter(Boolean);
+};
 
 /**
  * Servicio de Roles
@@ -161,6 +175,11 @@ const updateRoleService = async (roleId, { nombre, descripcion, permisos = [] })
 
         await queryRunner.commitTransaction();
 
+        // Los permisos del rol cambiaron: invalidamos el caché de todos
+        // los usuarios que lo tienen asignado.
+        const affectedUserIds = await getUserIdsByRole(roleId);
+        await invalidateManyUsersCache(affectedUserIds);
+
         // Retornar rol actualizado
         const updatedRole = await AppDataSource.getRepository("Role").findOne({
             where:     { id_rol: roleId },
@@ -194,7 +213,13 @@ const deleteRoleService = async (roleId) => {
         throw { status: 400, message: "No se puede eliminar el rol Administrador del sistema" };
     }
 
+    // Capturamos los usuarios afectados antes de borrar la relación
+    const affectedUserIds = await getUserIdsByRole(roleId);
+
     await roleRepo.remove(role);
+
+    await invalidateManyUsersCache(affectedUserIds);
+
     return { message: "Rol eliminado con éxito" };
 };
 
