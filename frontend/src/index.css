@@ -1234,3 +1234,229 @@ textarea.form-input {
     padding: 20px;
   }
 }
+
+/* ─────────────────────────────────────────
+   BASES NUTRICIONALES
+───────────────────────────────────────── */
+.bn-badge-mockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background-color: rgba(245, 158, 11, 0.12);
+  color: #B45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  white-space: nowrap;
+}
+
+.bn-search-card {
+  background: var(--blanco, #fff);
+  border-radius: var(--radius-md, 12px);
+  padding: 20px 24px;
+  box-shadow: var(--shadow-sm);
+  margin-bottom: 20px;
+}
+
+.bn-search-wrapper {
+  position: relative;
+  margin-top: 8px;
+}
+
+.bn-clear-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9CA3AF;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 4px;
+  transition: color var(--transition-fast, 0.15s);
+}
+.bn-clear-btn:hover { color: #374151; }
+
+.bn-sugerencias {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #E5E7EB;
+  border-radius: var(--radius-md, 12px);
+  box-shadow: var(--shadow-lg);
+  list-style: none;
+  padding: 6px;
+  margin: 0;
+  z-index: 100;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.bn-sugerencia-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--transition-fast, 0.15s);
+}
+.bn-sugerencia-item:hover { background: var(--lavanda-suave, #F3E8FF); }
+
+.bn-cat-icono {
+  font-size: 22px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.bn-cat-icono--lg { font-size: 34px; }
+
+.bn-sugerencia-nombre {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+.bn-sugerencia-cat {
+  display: block;
+  font-size: 12px;
+  color: #6B7280;
+}
+.bn-sugerencia-cal {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--morado-primario, #6D28D9);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Grid de detalle */
+.bn-detalle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 20px;
+  animation: slideIn 0.25s ease-out;
+}
+
+@media (max-width: 760px) {
+  .bn-detalle-grid { grid-template-columns: 1fr; }
+}
+
+.bn-info-card,
+.bn-nutrientes-card {
+  background: #fff;
+  border-radius: var(--radius-md, 12px);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+}
+
+.bn-alimento-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.bn-alimento-nombre {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px;
+}
+.bn-categoria-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--lavanda-suave, #F3E8FF);
+  color: var(--morado-primario, #6D28D9);
+}
+
+.bn-gramos-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: #F9FAFB;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+.bn-gramos-info strong { color: #111827; }
+
+/* Nutrientes */
+.bn-nutrientes-titulo {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 4px;
+}
+.bn-nutrientes-subtitulo {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 0 0 20px;
+}
+.bn-nutrientes-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.bn-nutriente-row { display: flex; flex-direction: column; gap: 5px; }
+.bn-nutriente-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.bn-nutriente-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.bn-nutriente-valor {
+  font-size: 15px;
+  font-weight: 700;
+}
+.bn-nutriente-unidad {
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.75;
+}
+.bn-barra-bg {
+  height: 6px;
+  background: #F3F4F6;
+  border-radius: 99px;
+  overflow: hidden;
+}
+.bn-barra-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.35s ease;
+}
+
+.bn-referencia-nota {
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid #F3F4F6;
+  font-size: 11px;
+  color: #9CA3AF;
+  line-height: 1.5;
+}
+
+/* Estado vacío */
+.bn-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  color: #9CA3AF;
+  font-size: 14px;
+  gap: 12px;
+}
+.bn-empty-icono { font-size: 48px; line-height: 1; }

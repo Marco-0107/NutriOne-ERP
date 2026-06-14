@@ -13,6 +13,7 @@ import UsuariosManager from './components/UsuariosManager';
 import AgendarPublico from './components/AgendarPublico';
 import DisponibilidadManager from './components/DisponibilidadManager';
 import RegistroPaciente from './components/RegistroPaciente';
+import BasesNutricionales from './components/BasesNutricionales';
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -70,6 +71,8 @@ const AppContent = () => {
                 return 'Registro de Paciente';
             case '/disponibilidad':
                 return 'Disponibilidad Horaria';
+            case '/nutricion':
+                return 'Bases Nutricionales';
             case '/agendar':
                 return 'Agendar Cita';
             default:
@@ -93,7 +96,11 @@ const AppContent = () => {
                 <main className="content-container">
                     <Routes>
                         <Route path="/" element={<Dashboard />} />
+                          
+                        <Route path="/fichas" element={<AntecedentesMockup />} />
 
+                        <Route path="/nutricion" element={<BasesNutricionales />} />
+                          
                         <Route path="/calendario" element={<Calendario />} />
 
                         <Route path="/agendar" element={<AgendarPublico />} />

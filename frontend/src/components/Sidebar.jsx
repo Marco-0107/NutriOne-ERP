@@ -1,7 +1,8 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, Clock, CalendarDays } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList, Clock, CalendarDays, Salad } from 'lucide-react';
+
 
 const Sidebar = () => {
     const { user, logout, hasPermission } = useAuth();
@@ -62,7 +63,13 @@ const Sidebar = () => {
                 </NavLink>
                 )}
 
-
+                <NavLink
+                    to="/nutricion"
+                    className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                >
+                    <Salad size={18} />
+                    <span>Bases Nutricionales</span>
+                </NavLink>
 
                 {hasPermission('disponibilidad:ver') && (
                     <NavLink
