@@ -35,6 +35,27 @@ module.exports = new EntitySchema({
             scale: 2,
             nullable: true,
         },
+        nombre_social: {
+            type: "varchar",
+            length: 200,
+            nullable: true,
+        },
+        sexo: {
+            type: "varchar",
+            length: 30,
+            nullable: true,
+        },
+        presion_arterial: {
+            type: "varchar",
+            length: 20,
+            nullable: true,
+        },
+        circunferencia_cintura: {
+            type: "numeric",
+            precision: 5,
+            scale: 2,
+            nullable: true,
+        },
         calculos: {
             type: "text",
             nullable: true,
@@ -52,6 +73,14 @@ module.exports = new EntitySchema({
             nullable: true,
         },
         indicaciones: {
+            type: "text",
+            nullable: true,
+        },
+        recomendaciones: {
+            type: "text",
+            nullable: true,
+        },
+        derivaciones: {
             type: "text",
             nullable: true,
         },

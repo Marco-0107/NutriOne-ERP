@@ -52,6 +52,7 @@ const Sidebar = () => {
                     <span>Inicio</span>
                 </NavLink>
 
+                {hasPermission('calendario:ver') && (
                 <NavLink
                     to="/calendario"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
@@ -59,6 +60,7 @@ const Sidebar = () => {
                     <CalendarDays size={18} />
                     <span>Calendario</span>
                 </NavLink>
+                )}
 
                 {hasPermission('fichas:ver') && (
                     <NavLink
