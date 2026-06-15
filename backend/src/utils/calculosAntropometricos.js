@@ -165,20 +165,22 @@ function clasificarCuello(perimetroCuelloCm, sexo) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4.6 Perímetro de cintura (riesgo cardiovascular)
+// 4.6 Perímetro de cintura
 // ─────────────────────────────────────────────────────────────────────────────
 
-function clasificarCintura(perimetroCinturaCm, sexo) {
+function clasificarCintura(perimetroCinturaCm, sexo, etapa) {
     const v = num(perimetroCinturaCm), s = normalizarSexo(sexo);
     if (v === null || !s) return null;
+    const esPediatrico = etapa === "escolar" || etapa === "adolescente";
+    let nivel;
     if (s === "M") {
-        if (v < 88) return "Normal";
-        if (v <= 102) return "Riesgo aumentado";
-        return "Riesgo muy alto";
+        nivel = v < 88 ? 0 : v <= 102 ? 1 : 2;
+    } else {
+        nivel = v < 80 ? 0 : v <= 88 ? 1 : 2;
     }
-    if (v < 80) return "Normal";
-    if (v <= 88) return "Riesgo aumentado";
-    return "Riesgo muy alto";
+    if (nivel === 0) return "Normal";
+    if (esPediatrico) return nivel === 1 ? "Riesgo de obesidad abdominal" : "Obesidad abdominal";
+    return nivel === 1 ? "Riesgo aumentado" : "Riesgo muy alto";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

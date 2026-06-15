@@ -136,11 +136,16 @@ export function clasificarCuello(cuelloCm, sexo) {
     if (v === null || !s) return null;
     return v > (s === "M" ? 37 : 34) ? "Riesgo metabólico" : "Sin riesgo";
 }
-export function clasificarCintura(cinturaCm, sexo) {
+export function clasificarCintura(cinturaCm, sexo, etapa) {
     const v = num(cinturaCm), s = normalizarSexo(sexo);
     if (v === null || !s) return null;
-    if (s === "M") { if (v < 88) return "Normal"; if (v <= 102) return "Riesgo aumentado"; return "Riesgo muy alto"; }
-    if (v < 80) return "Normal"; if (v <= 88) return "Riesgo aumentado"; return "Riesgo muy alto";
+    const esPediatrico = etapa === "escolar" || etapa === "adolescente";
+    let nivel;
+    if (s === "M") { nivel = v < 88 ? 0 : v <= 102 ? 1 : 2; }
+    else { nivel = v < 80 ? 0 : v <= 88 ? 1 : 2; }
+    if (nivel === 0) return "Normal";
+    if (esPediatrico) return nivel === 1 ? "Riesgo de obesidad abdominal" : "Obesidad abdominal";
+    return nivel === 1 ? "Riesgo aumentado" : "Riesgo muy alto";
 }
 export function calcularICA(cinturaCm, tallaCm) {
     const c = num(cinturaCm), t = num(tallaCm);
@@ -335,7 +340,7 @@ export function evaluarPaciente(input = {}) {
         perdidaPeso: { valor: ppVal, clasificacion: clasificarPerdidaPeso(ppVal, input.periodoPP) },
         contextura: { valor: contexturaVal, clasificacion: clasificarContextura(contexturaVal, sexo) },
         cuello: { valor: num(perimetros.cuello), clasificacion: clasificarCuello(perimetros.cuello, sexo) },
-        cintura: { valor: num(perimetros.cintura), clasificacion: clasificarCintura(perimetros.cintura, sexo) },
+        cintura: { valor: num(perimetros.cintura), clasificacion: clasificarCintura(perimetros.cintura, sexo, etapa.etapa) },
         ica: { valor: icaVal, clasificacion: clasificarICA(icaVal) },
         icc: { valor: iccVal, clasificacion: clasificarICC(iccVal, sexo) },
         pantorrilla: { valor: num(perimetros.pantorrilla), clasificacion: clasificarPantorrilla(perimetros.pantorrilla) },

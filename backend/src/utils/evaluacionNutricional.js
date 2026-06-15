@@ -94,7 +94,7 @@ function evaluarPaciente(input = {}) {
         },
         contextura: { valor: contexturaVal, clasificacion: antro.clasificarContextura(contexturaVal, sexo) },
         cuello: { valor: num(perimetros.cuello), clasificacion: antro.clasificarCuello(perimetros.cuello, sexo) },
-        cintura: { valor: num(perimetros.cintura), clasificacion: antro.clasificarCintura(perimetros.cintura, sexo) },
+        cintura: { valor: num(perimetros.cintura), clasificacion: antro.clasificarCintura(perimetros.cintura, sexo, etapa.etapa) },
         ica: { valor: icaVal, clasificacion: antro.clasificarICA(icaVal) },
         icc: { valor: iccVal, clasificacion: antro.clasificarICC(iccVal, sexo) },
         pantorrilla: { valor: num(perimetros.pantorrilla), clasificacion: antro.clasificarPantorrilla(perimetros.pantorrilla) },
