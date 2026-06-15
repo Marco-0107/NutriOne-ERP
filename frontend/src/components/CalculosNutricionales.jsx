@@ -463,7 +463,8 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 							</div>
 						</>
 					)}
-			</div>
+					</div>
+				</div>
 
 			{/* ── MACRONUTRIENTES ── */}
 			<div>
