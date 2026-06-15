@@ -1,0 +1,92 @@
+{
+  "nombre": "Requerimiento de Energía durante el Primer Año de Vida según Tipo de Alimentación",
+  "fuente": "Guía de Alimentación del Niño/a Menor de 2 años y Guía de Alimentación hasta la Adolescencia - DINTA/MINSAL (Anexo 6)",
+  "unidades": "kcal/kg/dia",
+  "nota": "Valores calculados en base a patrones de referencia de crecimiento OMS 2006. Usar columna 'media' cuando no se especifica tipo de alimentación.",
+  "filas": [
+    {
+      "mes_min": 0, "mes_max": 1,
+      "peso_ninos_kg": 4.6, "peso_ninas_kg": 4.4,
+      "lm":      { "ninos": 106, "ninas": 99,  "media": 102 },
+      "formula": { "ninos": 122, "ninas": 117, "media": 120 },
+      "mixta":   { "ninos": 113, "ninas": 107, "media": 110 }
+    },
+    {
+      "mes_min": 1, "mes_max": 2,
+      "peso_ninos_kg": 5.5, "peso_ninas_kg": 5.1,
+      "lm":      { "ninos": 98,  "ninas": 95,  "media": 97 },
+      "formula": { "ninos": 110, "ninas": 108, "media": 109 },
+      "mixta":   { "ninos": 104, "ninas": 101, "media": 102 }
+    },
+    {
+      "mes_min": 2, "mes_max": 3,
+      "peso_ninos_kg": 6.3, "peso_ninas_kg": 5.8,
+      "lm":      { "ninos": 91,  "ninas": 90,  "media": 90 },
+      "formula": { "ninos": 100, "ninas": 101, "media": 100 },
+      "mixta":   { "ninos": 95,  "ninas": 94,  "media": 95 }
+    },
+    {
+      "mes_min": 3, "mes_max": 4,
+      "peso_ninos_kg": 6.9, "peso_ninas_kg": 6.4,
+      "lm":      { "ninos": 79,  "ninas": 80,  "media": 79 },
+      "formula": { "ninos": 86,  "ninas": 89,  "media": 87 },
+      "mixta":   { "ninos": 82,  "ninas": 84,  "media": 83 }
+    },
+    {
+      "mes_min": 4, "mes_max": 5,
+      "peso_ninos_kg": 7.5, "peso_ninas_kg": 6.9,
+      "lm":      { "ninos": 79,  "ninas": 79,  "media": 79 },
+      "formula": { "ninos": 85,  "ninas": 87,  "media": 86 },
+      "mixta":   { "ninos": 81,  "ninas": 82,  "media": 82 }
+    },
+    {
+      "mes_min": 5, "mes_max": 6,
+      "peso_ninos_kg": 7.9, "peso_ninas_kg": 7.4,
+      "lm":      { "ninos": 78,  "ninas": 79,  "media": 78 },
+      "formula": { "ninos": 83,  "ninas": 85,  "media": 84 },
+      "mixta":   { "ninos": 81,  "ninas": 81,  "media": 81 }
+    },
+    {
+      "mes_min": 6, "mes_max": 7,
+      "peso_ninos_kg": 8.3, "peso_ninas_kg": 7.7,
+      "lm":      { "ninos": 76,  "ninas": 76,  "media": 76 },
+      "formula": { "ninos": 81,  "ninas": 81,  "media": 81 },
+      "mixta":   { "ninos": 79,  "ninas": 78,  "media": 79 }
+    },
+    {
+      "mes_min": 7, "mes_max": 8,
+      "peso_ninos_kg": 8.6, "peso_ninas_kg": 8.0,
+      "lm":      { "ninos": 77,  "ninas": 76,  "media": 76 },
+      "formula": { "ninos": 81,  "ninas": 81,  "media": 81 },
+      "mixta":   { "ninos": 79,  "ninas": 78,  "media": 79 }
+    },
+    {
+      "mes_min": 8, "mes_max": 9,
+      "peso_ninos_kg": 8.9, "peso_ninas_kg": 8.3,
+      "lm":      { "ninos": 77,  "ninas": 76,  "media": 77 },
+      "formula": { "ninos": 81,  "ninas": 81,  "media": 81 },
+      "mixta":   { "ninos": 79,  "ninas": 78,  "media": 79 }
+    },
+    {
+      "mes_min": 9, "mes_max": 10,
+      "peso_ninos_kg": 9.1, "peso_ninas_kg": 8.6,
+      "lm":      { "ninos": 79,  "ninas": 77,  "media": 78 },
+      "formula": { "ninos": 82,  "ninas": 81,  "media": 81 },
+      "mixta":   { "ninos": 80,  "ninas": 79,  "media": 80 }
+    },
+    {
+      "mes_min": 10, "mes_max": 11,
+      "peso_ninos_kg": 9.4, "peso_ninas_kg": 8.8,
+      "lm":      { "ninos": 79,  "ninas": 77,  "media": 78 },
+      "formula": { "ninos": 82,  "ninas": 81,  "media": 81 },
+      "mixta":   { "ninos": 80,  "ninas": 79,  "media": 80 }
+    },
+    {
+      "mes_min": 11, "mes_max": 12,
+      "peso_ninos_kg": 9.6, "peso_ninas_kg": 9.0,
+      "lm":      { "ninos": 79,  "ninas": 77,  "media": 78 },
+      "formula": { "ninos": 82,  "ninas": 81,  "media": 81 },
+      "mixta":   { "ninos": 81,  "ninas": 79,  "media": 80 }
+    }
+  ]
+}

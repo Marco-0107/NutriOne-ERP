@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
+import CalculosNutricionales from './CalculosNutricionales';
 
 const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const WEEKDAY_SHORT = ['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'];
@@ -127,6 +128,8 @@ const Calendario = () => {
 	const [usaNombreSocial, setUsaNombreSocial] = useState(false);
 	const [panelCalculadoraOpen, setPanelCalculadoraOpen] = useState(false);
 	const [panelAlimentosOpen, setPanelAlimentosOpen] = useState(false);
+	const [atencionEvaluacion, setAtencionEvaluacion] = useState(null); // evaluación nutricional existente
+	const calculoDataRef = useRef(null); // datos en vivo de la calculadora (sin re-render)
 
 	const daysScrollRef = useRef(null);
 
@@ -372,15 +375,29 @@ const Calendario = () => {
 	};
 
 	// ── Handlers: Atención Médica ────────────────────────────────────────────
+	const calcularEdadDesdeNacimiento = (fechaNacimiento) => {
+		if (!fechaNacimiento) return '';
+		const hoy = new Date();
+		const nac = new Date(fechaNacimiento);
+		let edad = hoy.getFullYear() - nac.getFullYear();
+		const cumpleEsteAnio = new Date(hoy.getFullYear(), nac.getMonth(), nac.getDate());
+		if (hoy < cumpleEsteAnio) edad--;
+		return edad >= 0 ? edad : '';
+	};
+
 	const openAtencionModal = async (cita) => {
 		setAtencionCita(cita);
 		setAtencionError('');
 		setAtencionSuccess(false);
 		setAtencionFicha(null);
+		setAtencionEvaluacion(null);
+		calculoDataRef.current = null;
 		const today = new Date().toISOString().split('T')[0];
+		const edadAuto = calcularEdadDesdeNacimiento(cita.paciente?.fecha_nacimiento);
 		setAtencionForm({
 			...INITIAL_ATENCION_FORM,
 			fecha_atencion: cita.fecha || today,
+			edad: edadAuto,
 		});
 		setAtencionOpen(true);
 
@@ -399,7 +416,7 @@ const Calendario = () => {
 				setAtencionForm({
 					tipo:                    f.tipo                    ?? 'Control nutricional',
 					fecha_atencion:          f.fecha_atencion           ?? cita.fecha ?? today,
-					edad:                    f.edad                    ?? '',
+					edad:                    f.edad                    ?? edadAuto,
 					nombre_social:           f.nombre_social            ?? '',
 					sexo:                    f.sexo                    ?? '',
 					peso:                    f.peso                    ?? '',
@@ -414,6 +431,15 @@ const Calendario = () => {
 					derivaciones:            f.derivaciones             ?? '',
 					observacion:             f.observacion              ?? '',
 				});
+
+				// Cargar evaluación nutricional existente (si hay y se tiene permiso)
+				try {
+					const evRes = await fetch(apiUrl(`/calculos/ficha/${f.id_ficha}`), {
+						headers: { Authorization: `Bearer ${token}` },
+					});
+					const evData = await evRes.json();
+					if (evRes.ok && evData.data) setAtencionEvaluacion(evData.data);
+				} catch { /* sin evaluación previa */ }
 			}
 		} catch { /* silencioso */ } finally {
 			setAtencionFetchLoading(false);
@@ -429,6 +455,8 @@ const Calendario = () => {
 		setUsaNombreSocial(false);
 		setPanelCalculadoraOpen(false);
 		setPanelAlimentosOpen(false);
+		setAtencionEvaluacion(null);
+		calculoDataRef.current = null;
 	};
 
 	const handleAtencionChange = (field) => (e) =>
@@ -441,6 +469,11 @@ const Calendario = () => {
 		if (!atencionForm.tipo.trim())            return setAtencionError('El tipo de atención es requerido.');
 		if (!atencionForm.fecha_atencion)          return setAtencionError('La fecha de atención es requerida.');
 		if (!String(atencionForm.edad).trim())     return setAtencionError('La edad del paciente es requerida.');
+
+		// Validación de la calculadora: si hay requerimiento energético, los macros deben sumar 100%.
+		const calc = calculoDataRef.current;
+		if (calc?.requiereMacros && !calc.macrosValidos)
+			return setAtencionError('La distribución de macronutrientes debe sumar 100% antes de guardar.');
 
 		setAtencionLoading(true);
 		try {
@@ -463,6 +496,10 @@ const Calendario = () => {
 				...(atencionForm.observacion.trim()              && { observacion:              atencionForm.observacion.trim() }),
 			};
 
+			// Volcar diagnóstico y resumen generados por la calculadora hacia la ficha.
+			if (calc?.diagnostico) body.diagnostico_nutricional = calc.diagnostico;
+			if (calc?.resumen)     body.calculos                = calc.resumen;
+
 			let res;
 			if (atencionFicha) {
 				// Actualizar ficha existente
@@ -484,6 +521,27 @@ const Calendario = () => {
 			if (!res.ok) {
 				setAtencionError(data.message || 'Error al guardar la ficha clínica.');
 				return;
+			}
+
+			// Persistir la evaluación nutricional asociada a la ficha (best-effort).
+			const fichaId = atencionFicha ? atencionFicha.id_ficha : data?.data?.id_ficha;
+			const valePersistir = calc && (calc.tieneMediciones || calc.ev?.antropometria?.imc?.valor != null);
+			if (fichaId && valePersistir && hasPermission('calculos:gestionar')) {
+				try {
+					const evUrl    = atencionEvaluacion ? apiUrl(`/calculos/${atencionEvaluacion.id}`) : apiUrl(`/calculos/ficha/${fichaId}`);
+					const evMethod = atencionEvaluacion ? 'PUT' : 'POST';
+					const evRes = await fetch(evUrl, {
+						method: evMethod,
+						headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+						body: JSON.stringify(calc.input),
+					});
+					if (!evRes.ok) {
+						const ed = await evRes.json().catch(() => ({}));
+						console.error('No se pudo guardar la evaluación nutricional:', ed.message || evRes.status);
+					}
+				} catch (err) {
+					console.error('Error de red al guardar la evaluación nutricional:', err);
+				}
 			}
 
 			setAtencionSuccess(true);
@@ -1069,7 +1127,7 @@ const Calendario = () => {
 										</div>
 									</div>
 
-									{/* ══ PANEL: CALCULADORA ANTROPOMÉTRICA (placeholder) ══ */}
+									{/* ══ PANEL: CALCULADORA ANTROPOMÉTRICA / ENERGÉTICA ══ */}
 									<div style={{ border: '1px solid rgba(109,40,217,0.18)', borderRadius: 'var(--radius-md)', marginBottom: '14px', overflow: 'hidden' }}>
 										<button
 											type="button"
@@ -1083,13 +1141,25 @@ const Calendario = () => {
 											<ChevronDown size={16} color="var(--morado-primario)" style={{ transition: 'transform 0.2s', transform: panelCalculadoraOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
 										</button>
 										{panelCalculadoraOpen && (
-											<div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: 'var(--bg-card)' }}>
-												<Calculator size={32} color="var(--morado-primario)" style={{ opacity: 0.25 }} />
-												<p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
-													<strong style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>Próximamente</strong>
-													Cálculos de IMC, GET, peso ideal, % grasa corporal y más,<br />utilizando los datos de atención registrados arriba.
-												</p>
-											</div>
+											hasPermission('calculos:ver') ? (
+												<CalculosNutricionales
+													datosBase={{
+														edad: atencionForm.edad,
+														sexo: atencionForm.sexo,
+														peso: atencionForm.peso,
+														talla: atencionForm.talla,
+														circunferenciaCintura: atencionForm.circunferencia_cintura,
+													}}
+													initial={atencionEvaluacion}
+													token={token}
+													canGestionar={hasPermission('calculos:gestionar')}
+													onChange={(d) => { calculoDataRef.current = d; }}
+												/>
+											) : (
+												<div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+													No tienes permiso para usar la calculadora (<code>calculos:ver</code>).
+												</div>
+											)
 										)}
 									</div>
 

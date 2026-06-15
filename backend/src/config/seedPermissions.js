@@ -162,6 +162,19 @@ const SEED_PERMISSIONS = [
         codigo: "calendario:ver",
         modulo: "Calendario",
         descripcion: "Permite acceder a la vista de calendario para visualizar citas"
+    },
+    // ─────────────── Módulo: Cálculos Nutricionales ───────────────
+    {
+        nombre: "Ver Cálculos Nutricionales",
+        codigo: "calculos:ver",
+        modulo: "Cálculos Nutricionales",
+        descripcion: "Permite ver la calculadora antropométrica/energética dentro de la atención y consultar el historial de evaluaciones"
+    },
+    {
+        nombre: "Gestionar Cálculos Nutricionales",
+        codigo: "calculos:gestionar",
+        modulo: "Cálculos Nutricionales",
+        descripcion: "Permite guardar y actualizar la evaluación nutricional (mediciones y resultados) de una atención"
     }
 ];
 

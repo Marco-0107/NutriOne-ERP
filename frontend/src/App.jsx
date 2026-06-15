@@ -34,7 +34,7 @@ const AppContent = () => {
                 fontSize: '16px',
                 fontFamily: "'Outfit', sans-serif"
             }}>
-                Cargando portal NutriERP...
+                Cargando portal NutriOne ERP...
             </div>
         );
     }
@@ -76,7 +76,7 @@ const AppContent = () => {
             case '/agendar':
                 return 'Agendar Cita';
             default:
-                return 'NutriERP';
+                return 'NutriOne ERP';
         }
     };
 
