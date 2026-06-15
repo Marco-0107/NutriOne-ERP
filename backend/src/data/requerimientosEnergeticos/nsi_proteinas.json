@@ -1,0 +1,15 @@
+{
+  "nombre": "Nivel Seguro de Ingesta de Proteínas para Niños/as",
+  "fuente": "Guía de Alimentación DINTA/MINSAL (Anexo 8). FAO/OMS/UNU Ginebra 1985; DRI 2006.",
+  "unidades": "g/kg/dia",
+  "filas": [
+    { "edad_min": 0.0,  "edad_max": 0.5,  "nsi_fao": 2.2, "nsi_dri": 1.52 },
+    { "edad_min": 0.5,  "edad_max": 1.0,  "nsi_fao": 1.6, "nsi_dri": 1.0 },
+    { "edad_min": 1.0,  "edad_max": 3.0,  "nsi_fao": 1.2, "nsi_dri": 0.87 },
+    { "edad_min": 4.0,  "edad_max": 6.0,  "nsi_fao": 1.2, "nsi_dri": 0.76 },
+    { "edad_min": 7.0,  "edad_max": 10.0, "nsi_fao": 1.0, "nsi_dri": 0.76 },
+    { "edad_min": 11.0, "edad_max": 14.0, "nsi_fao": 1.0, "nsi_dri": 0.76 },
+    { "edad_min": 15.0, "edad_max": 18.0, "nsi_fao": 0.9, "nsi_dri_hombres": 0.73, "nsi_dri_mujeres": 0.71 },
+    { "edad_min": 19.0, "edad_max": 21.0, "nsi_fao": 0.8, "nsi_dri": 0.66 }
+  ]
+}

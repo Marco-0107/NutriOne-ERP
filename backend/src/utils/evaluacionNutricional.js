@@ -18,6 +18,8 @@ const { ETAPAS, calcularEdadExacta, edadEnMesesRedondeada, determinarEtapa } = r
 const { rangosPorEtapa, sugeridoMacros } = require("./referencias/rangosMacronutrientes");
 const { generarDiagnostico } = require("./diagnosticoNutricional");
 const { evaluarIndicador, evaluarPesoTalla } = require("./referencias/antropometriaPediatrica");
+const { evaluarReserva } = require("./referencias/reservasFrisancho");
+const { calcularGETPediatrico, nsiProteinas } = require("./referencias/requerimientosEnergeticosPediatrico");
 const {
     clasificarIMCEmbarazada,
     evaluarGananciaPeso,
@@ -67,6 +69,9 @@ function evaluarPaciente(input = {}) {
     });
     const edadTexto = formatearEdad(edadExacta, edadAnios);
 
+    const edadBiologicaAnios = num(input.edadBiologicaAnios);
+    const usarEdadBio = edadBiologicaAnios != null && edadAnios != null && Math.abs(edadBiologicaAnios - edadAnios) > 1;
+
     const pesoActual = num(input.pesoActual);
     const tallaCm = num(input.tallaCm);
 
@@ -78,6 +83,18 @@ function evaluarPaciente(input = {}) {
     const iccVal = antro.calcularICC(perimetros.cintura, perimetros.cadera);
     const icaVal = antro.calcularICA(perimetros.cintura, tallaCm);
     const reservas = antro.reservasBraquiales(perimetros.braquial, pliegues.tricipital);
+
+    // Edad decimal para búsqueda en tablas (Frisancho, energía pediátrica).
+    const _edadDecimalCrono = edadExacta
+        ? edadExacta.años + edadExacta.meses / 12 + (edadExacta.días || 0) / 365
+        : edadAnios;
+    const edadDecimal = usarEdadBio ? edadBiologicaAnios : _edadDecimalCrono;
+    const frisancho = edadDecimal != null && sexo ? {
+        pct: evaluarReserva('pct', sexo, edadDecimal, num(pliegues.tricipital)),
+        cmb: evaluarReserva('cmb', sexo, edadDecimal, reservas.cmb),
+        amb: evaluarReserva('amb', sexo, edadDecimal, reservas.amb),
+        agb: evaluarReserva('agb', sexo, edadDecimal, reservas.agb),
+    } : null;
 
     // % grasa: método según etapa y pliegues disponibles.
     const grasa = calcularGrasa(etapa, pliegues, sexo, input.maduracion);
@@ -99,6 +116,7 @@ function evaluarPaciente(input = {}) {
         icc: { valor: iccVal, clasificacion: antro.clasificarICC(iccVal, sexo) },
         pantorrilla: { valor: num(perimetros.pantorrilla), clasificacion: antro.clasificarPantorrilla(perimetros.pantorrilla) },
         reservas,
+        frisancho,
         grasa,
     };
 
@@ -112,13 +130,26 @@ function evaluarPaciente(input = {}) {
     // ── Requerimiento energético ───────────────────────────────────────────────
     const actividad = input.actividad || {};
     const palValor = num(actividad.pal) ?? energ.palSugerido(actividad.categoria);
-    const geb = energ.calcularGEB({ pesoKg: pesoActual, edadAnios, sexo });
     const fp = input.hospitalizado ? num(input.fp) : null;
-    const get = energ.calcularGET(geb, palValor, fp);
 
-    if (geb === null && edadAnios != null && edadAnios < 18) {
-        notas.push("GEB no calculado: las ecuaciones FAO del documento cubren solo edad ≥ 18 años.");
+    // Adultos: GEB (FAO) → GET = GEB × PAL (× FP si hospitalizado).
+    let geb = energ.calcularGEB({ pesoKg: pesoActual, edadAnios, sexo });
+    let get = energ.calcularGET(geb, palValor, fp);
+    let getPediatrico = null;
+
+    if (geb === null && etapa.esPediatrico) {
+        const edadParaEnergia = usarEdadBio ? edadBiologicaAnios : _edadDecimalCrono;
+        getPediatrico = calcularGETPediatrico(edadParaEnergia, sexo, pesoActual, actividad.categoria, input.tipoAlimentacion);
+        if (getPediatrico.disponible) {
+            get = getPediatrico.get;
+            if (usarEdadBio) notas.push(`Energía calculada con edad biológica (Tanner) ${edadBiologicaAnios?.toFixed(1)} años por diferencia > 1 año con edad cronológica.`);
+        }
     }
+
+    if (geb === null && !getPediatrico?.disponible) {
+        notas.push("Energía no calculada: faltan datos de peso o edad.");
+    }
+    const nsi = nsiProteinas(_edadDecimalCrono, sexo);
 
     const energetico = {
         geb,
@@ -128,6 +159,9 @@ function evaluarPaciente(input = {}) {
         patologia: input.patologia ?? null,
         fp,
         get,
+        pediatrico: getPediatrico?.disponible ? getPediatrico : null,
+        nsi,
+        edadBiologicaAnios: usarEdadBio ? edadBiologicaAnios : null,
     };
 
     // ── Macronutrientes ────────────────────────────────────────────────────────
@@ -158,17 +192,22 @@ function evaluarPaciente(input = {}) {
     let pediatria = null;
     if (etapa.esPediatrico) {
         // Edad en meses con redondeo MINSAL (≥15 días = +1 mes).
-        const edadMeses = edadExacta
+        // Si hay edad biológica con diferencia > 1 año, se usa para IMC/E y T/E.
+        const edadMesesCrono = edadExacta
             ? edadEnMesesRedondeada(edadExacta)
             : (num(input.edadMeses) ?? (edadAnios != null ? edadAnios * 12 : null));
+        const edadMesesBio = usarEdadBio ? Math.round(edadBiologicaAnios * 12) : null;
+        const edadMeses = edadMesesCrono;
+        const edadMesesTablas = edadMesesBio ?? edadMesesCrono;
 
         const pe = evaluarIndicador("peso_edad", sexo, edadMeses, pesoActual);
-        const te = evaluarIndicador("talla_edad", sexo, edadMeses, tallaCm);
-        const imcE = evaluarIndicador("imc_edad", sexo, edadMeses, imc);
+        const te = evaluarIndicador("talla_edad", sexo, edadMesesTablas, tallaCm);
+        const imcE = evaluarIndicador("imc_edad", sexo, edadMesesTablas, imc);
         const pt = evaluarPesoTalla(sexo, edadMeses, tallaCm, pesoActual);
 
         pediatria = {
             edadMeses,
+            edadMesesTablas: usarEdadBio ? edadMesesTablas : undefined,
             peso_edad: pe,
             talla_edad: te,
             imc_edad: imcE,

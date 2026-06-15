@@ -109,7 +109,14 @@ function determinarEtapa({ edad, años, embarazada = false, nodriza = false } = 
     if (embarazada) return etapaResult(ETAPAS.EMBARAZADA);
     if (nodriza)    return etapaResult(ETAPAS.NODRIZA);
 
-    const e = edad || (Number.isFinite(años) ? { años, meses: 0, días: 0, totalMeses: años * 12, totalDias: años * 365 } : null);
+    const _a = Number.isFinite(años) ? años : null;
+    const e = edad || (_a !== null ? {
+        años: Math.floor(_a),
+        meses: Math.floor((_a - Math.floor(_a)) * 12),
+        días: 0,
+        totalMeses: _a * 12,
+        totalDias: _a * 365,
+    } : null);
     if (!e) return etapaResult(ETAPAS.ADULTO); // sin datos: asumir adulto (caso más común)
 
     // Recién nacido: < 29 días (criterio MINSAL).

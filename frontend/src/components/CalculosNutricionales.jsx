@@ -3,6 +3,7 @@ import { Activity, AlertCircle, HeartPulse, Ruler, Sparkles } from 'lucide-react
 import { apiUrl } from '../helpers/api';
 import {
 	evaluarPaciente,
+	calcularEdadBiologica,
 	PAL_CATEGORIAS,
 	sugeridoMacros,
 } from '../helpers/calculosNutricionales';
@@ -91,6 +92,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 		actividadCategoria: 'sedentario', palOverride: '',
 		hospitalizado: false, patologia: '', fp: '',
 		imcMeta: '', maduracion: 'prepuber', embarazada: false, nodriza: false,
+		tannerGrado: '', fechaMenarquia: '',
 	});
 	const [macros, setMacros] = useState({ pro: '', cho: '', lip: '' });
 	const [macrosTocado, setMacrosTocado] = useState(false);
@@ -136,9 +138,17 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 	}, [cfg.hospitalizado, token, patologias.length]);
 
 	// ── Construcción del input para el motor ──────────────────────────────────
+	const edadBiologicaAnios = useMemo(() => calcularEdadBiologica(
+		datosBase.sexo,
+		num(datosBase.edad),
+		cfg.tannerGrado,
+		cfg.fechaMenarquia || null,
+	), [datosBase.sexo, datosBase.edad, cfg.tannerGrado, cfg.fechaMenarquia]);
+
 	const input = useMemo(() => ({
 		sexo: datosBase.sexo || null,
 		edadAnios: num(datosBase.edad),
+		edadBiologicaAnios,
 		pesoActual: num(datosBase.peso),
 		tallaCm: num(datosBase.talla),
 		pesoHabitual: num(med.pesoHabitual),
@@ -280,6 +290,51 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 				</div>
 			</div>
 
+			{/* ── ESTADÍO DE TANNER (adolescentes) ── */}
+			{etapa === 'adolescente' && (() => {
+				const edad = num(datosBase.edad);
+				const s = (datosBase.sexo || '').toString().toUpperCase();
+				const mostrar = s.startsWith('M') ? (edad >= 10 && edad <= 15) : (edad >= 8 && edad <= 14);
+				if (!mostrar) return null;
+				const difBio = edadBiologicaAnios != null && edad != null ? Math.abs(edadBiologicaAnios - edad) : 0;
+				const usandoBio = difBio > 1;
+				return (
+					<div style={{ background: 'rgba(139,92,246,0.07)', border: '1px solid rgba(139,92,246,0.25)', borderRadius: '10px', padding: '12px 14px' }}>
+						{seccionTitulo(<Sparkles size={13} />, 'Estadío de Tanner (edad biológica)', '#7C3AED')}
+						<p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '-4px 0 10px' }}>
+							Si la diferencia entre edad biológica y cronológica supera 1 año, se usará la edad biológica para cálculos de requerimientos e indicadores.
+						</p>
+						<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', alignItems: 'end' }}>
+							<div className="form-group" style={{ marginBottom: 0 }}>
+								<label className="form-label" style={{ fontSize: '11px' }}>Estadío de Tanner</label>
+								<select className="form-input" style={inputMini} value={cfg.tannerGrado} onChange={setC('tannerGrado')}>
+									<option value="">— Sin Tanner —</option>
+									<option value="1">G1 — Prepuberal</option>
+									<option value="2">G2 — Inicio puberal</option>
+									<option value="3">G3 — Puberal</option>
+									<option value="4">G4 — Tardío puberal</option>
+									<option value="5">G5 — Adulto</option>
+								</select>
+							</div>
+							{s.startsWith('F') && cfg.tannerGrado === '5' && (
+								<div className="form-group" style={{ marginBottom: 0 }}>
+									<label className="form-label" style={{ fontSize: '11px' }}>Fecha de menarquia</label>
+									<input type="date" className="form-input" style={inputMini} value={cfg.fechaMenarquia}
+										onChange={(e) => setCfg((p) => ({ ...p, fechaMenarquia: e.target.value }))} />
+								</div>
+							)}
+							<div style={{ padding: '6px 10px', background: usandoBio ? 'rgba(124,58,237,0.12)' : 'var(--lavanda-suave)', borderRadius: '8px', fontSize: '12px' }}>
+								<div style={{ color: 'var(--text-muted)', fontWeight: 600, fontSize: '10px', marginBottom: '2px' }}>Edad biológica</div>
+								<div style={{ fontWeight: 800, color: '#7C3AED' }}>
+									{edadBiologicaAnios != null ? `${edadBiologicaAnios.toFixed(1)} años` : '—'}
+								</div>
+								{usandoBio && <div style={{ fontSize: '10px', color: '#7C3AED', fontWeight: 700 }}>↳ se usa en cálculos (Δ {difBio.toFixed(1)} a)</div>}
+							</div>
+						</div>
+					</div>
+				);
+			})()}
+
 			{/* ── RESULTADOS ANTROPOMÉTRICOS ── */}
 			<div>
 				{seccionTitulo(<Sparkles size={13} />, 'Resultados antropométricos', '#0F766E')}
@@ -389,15 +444,25 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 					</div>
 				)}
 				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
-					<Resultado label="GEB / basal (kcal/día)" valor={ev.energetico.geb} />
-					<Resultado label="PAL aplicado" valor={ev.energetico.pal} />
-					<Resultado label="GET / total (kcal/día)" valor={ev.energetico.get} clasif={cfg.hospitalizado && ev.energetico.fp ? `FP ${ev.energetico.fp}` : null} />
-				</div>
-				{ev.energetico.geb == null && num(datosBase.edad) != null && num(datosBase.edad) < 18 && (
-					<p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '8px' }}>
-						GEB no disponible: las ecuaciones FAO del documento cubren edad ≥ 18 años.
-					</p>
-				)}
+					{ev.energetico.geb != null ? (
+						<>
+							<Resultado label="GEB / basal (kcal/día)" valor={ev.energetico.geb} />
+							<Resultado label="PAL aplicado" valor={ev.energetico.pal} />
+							<Resultado label="GET / total (kcal/día)" valor={ev.energetico.get} clasif={cfg.hospitalizado && ev.energetico.fp ? `FP ${ev.energetico.fp}` : null} />
+						</>
+					) : (
+						<>
+							<Resultado label="Req. energético (kcal/día)" valor={ev.energetico.get} />
+							<div style={{ fontSize: '11px', color: 'var(--text-muted)', gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '4px' }}>
+								{ev.energetico.get != null
+									? `Tabla DINTA/MINSAL Anexo ${num(datosBase.edad) < 1 ? '6' : '7'} — actividad moderada con ajuste por nivel`
+									: 'Ingresa peso y edad para calcular.'}
+								{ev.energetico.edadBiologicaAnios != null && (
+									<span style={{ color: '#7C3AED', fontWeight: 700 }}> · usando edad biológica {ev.energetico.edadBiologicaAnios.toFixed(1)} a (Tanner)</span>
+								)}
+							</div>
+						</>
+					)}
 			</div>
 
 			{/* ── MACRONUTRIENTES ── */}

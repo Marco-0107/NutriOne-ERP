@@ -306,6 +306,78 @@ export function generarDiagnostico(ev) {
     return texto;
 }
 
+// ── Tablas energéticas pediátricas (Anexos 6 y 7 DINTA/MINSAL) ──────────────
+const _TABLA_PEDIATRICO = [
+    { eMin: 1.0,  eMax: 2.0,  H: 82, M: 80 }, { eMin: 2.0,  eMax: 3.0,  H: 84, M: 81 },
+    { eMin: 3.0,  eMax: 4.0,  H: 80, M: 77 }, { eMin: 4.0,  eMax: 5.0,  H: 77, M: 74 },
+    { eMin: 5.0,  eMax: 6.0,  H: 74, M: 72 }, { eMin: 6.0,  eMax: 7.0,  H: 73, M: 69 },
+    { eMin: 7.0,  eMax: 8.0,  H: 71, M: 67 }, { eMin: 8.0,  eMax: 9.0,  H: 69, M: 64 },
+    { eMin: 9.0,  eMax: 10.0, H: 67, M: 61 }, { eMin: 10.0, eMax: 11.0, H: 65, M: 58 },
+    { eMin: 11.0, eMax: 12.0, H: 62, M: 56 }, { eMin: 12.0, eMax: 13.0, H: 60, M: 52 },
+    { eMin: 13.0, eMax: 14.0, H: 58, M: 49 }, { eMin: 14.0, eMax: 15.0, H: 56, M: 47 },
+    { eMin: 15.0, eMax: 16.0, H: 53, M: 46 }, { eMin: 16.0, eMax: 17.0, H: 52, M: 44 },
+    { eMin: 17.0, eMax: 18.0, H: 50, M: 44 },
+];
+const _TABLA_LACTANTES = [
+    { mMin: 0,  mMax: 1,  H: 113, M: 107 }, { mMin: 1,  mMax: 2,  H: 104, M: 101 },
+    { mMin: 2,  mMax: 3,  H: 95,  M: 94  }, { mMin: 3,  mMax: 4,  H: 82,  M: 84  },
+    { mMin: 4,  mMax: 5,  H: 81,  M: 82  }, { mMin: 5,  mMax: 6,  H: 81,  M: 81  },
+    { mMin: 6,  mMax: 7,  H: 79,  M: 78  }, { mMin: 7,  mMax: 8,  H: 79,  M: 78  },
+    { mMin: 8,  mMax: 9,  H: 79,  M: 78  }, { mMin: 9,  mMax: 10, H: 80,  M: 79  },
+    { mMin: 10, mMax: 11, H: 80,  M: 79  }, { mMin: 11, mMax: 12, H: 81,  M: 79  },
+];
+const _FACTOR_ACT = { leve: 0.85, sedentario: 0.85, moderado: 1.0, moderada: 1.0, vigoroso: 1.15, vigorosa: 1.15 };
+
+function _kcalKgDia(edadAnios, sexo) {
+    const s = normalizarSexo(sexo);
+    if (edadAnios < 1) {
+        const mes = Math.floor(edadAnios * 12);
+        const f = _TABLA_LACTANTES.find(r => mes >= r.mMin && mes < r.mMax);
+        return f ? (s === 'M' ? f.H : f.M) : null;
+    }
+    const f = _TABLA_PEDIATRICO.find(r => edadAnios >= r.eMin && edadAnios <= r.eMax);
+    return f ? (s === 'M' ? f.H : f.M) : null;
+}
+
+function _calcularGETPediatrico(edadAnios, sexo, pesoKg, actividadCategoria) {
+    if (!pesoKg || edadAnios == null) return null;
+    const kcalKg = _kcalKgDia(edadAnios, sexo);
+    if (!kcalKg) return null;
+    const factor = _FACTOR_ACT[actividadCategoria] ?? 1.0;
+    return Math.round(pesoKg * kcalKg * factor);
+}
+
+/** Calcula edad biológica en años a partir del estadío de Tanner. */
+export function calcularEdadBiologica(sexo, edadAnios, tannerGrado, fechaMenarquia) {
+    const g = Number(tannerGrado);
+    if (!g || !sexo) return null;
+    const s = normalizarSexo(sexo);
+    if (!s) return null;
+    if (s === 'M') {
+        if (g === 1) return edadAnios;
+        if (g === 2) return 12.0;
+        if (g === 3) return 12.5;
+        if (g === 4) return 13.5;
+        if (g === 5) return 14.5;
+    } else {
+        if (g === 1) return edadAnios;
+        if (g === 2) return 10.5;
+        if (g === 3) return 11.0;
+        if (g === 4) return 12.0;
+        if (g === 5) {
+            const base = 12 + 8 / 12;
+            if (fechaMenarquia) {
+                const hoy = new Date();
+                const men = new Date(fechaMenarquia);
+                const meses = (hoy.getFullYear() - men.getFullYear()) * 12 + (hoy.getMonth() - men.getMonth());
+                return base + Math.max(0, meses) / 12;
+            }
+            return base;
+        }
+    }
+    return null;
+}
+
 // ── Orquestador ──────────────────────────────────────────────────────────────
 export function evaluarPaciente(input = {}) {
     const sexo = input.sexo ?? null;
@@ -314,6 +386,10 @@ export function evaluarPaciente(input = {}) {
     const edadAnios = num(input.edadAnios);
     const etapa = determinarEtapa({ años: edadAnios, embarazada: !!input.embarazada, nodriza: !!input.nodriza });
     const edadTexto = edadAnios != null ? `${edadAnios} años` : null;
+
+    const edadBiologicaAnios = num(input.edadBiologicaAnios);
+    const usarEdadBio = edadBiologicaAnios != null && edadAnios != null && Math.abs(edadBiologicaAnios - edadAnios) > 1;
+    const edadDecimal = usarEdadBio ? edadBiologicaAnios : edadAnios;
 
     const pesoActual = num(input.pesoActual);
     const tallaCm = num(input.tallaCm);
@@ -350,12 +426,19 @@ export function evaluarPaciente(input = {}) {
 
     const actividad = input.actividad || {};
     const palValor = num(actividad.pal) ?? palSugerido(actividad.categoria);
-    const geb = calcularGEB({ pesoKg: pesoActual, edadAnios, sexo });
+    let geb = calcularGEB({ pesoKg: pesoActual, edadAnios, sexo });
     const fp = input.hospitalizado ? num(input.fp) : null;
-    const get = calcularGET(geb, palValor, fp);
+    let get = calcularGET(geb, palValor, fp);
+
+    if (geb === null && etapa.esPediatrico) {
+        const getPed = _calcularGETPediatrico(edadDecimal, sexo, pesoActual, actividad.categoria);
+        if (getPed != null) get = getPed;
+    }
+
     const energetico = {
         geb, pal: palValor, actividadCategoria: actividad.categoria ?? null,
         hospitalizado: !!input.hospitalizado, patologia: input.patologia ?? null, fp, get,
+        edadBiologicaAnios: usarEdadBio ? edadBiologicaAnios : null,
     };
 
     const m = input.macros || sugeridoMacros(etapa.etapa);

@@ -1,0 +1,25 @@
+{
+  "nombre": "Requerimientos de Energía en Mayores de 1 Año",
+  "fuente": "Guía de Alimentación del Niño/a y Adolescente - DINTA/MINSAL (Anexo 7)",
+  "unidades": "kcal/kg/dia",
+  "nota": "Calculados en base a actividad moderada. Si actividad leve: -15%; si vigorosa: +15%. Peso¹: NCHS dic.2002; Peso²: OMS 2007.",
+  "filas": [
+    { "edad_min": 1.0,  "edad_max": 2.0,  "hombres": 82, "mujeres": 80 },
+    { "edad_min": 2.0,  "edad_max": 3.0,  "hombres": 84, "mujeres": 81 },
+    { "edad_min": 3.0,  "edad_max": 4.0,  "hombres": 80, "mujeres": 77 },
+    { "edad_min": 4.0,  "edad_max": 5.0,  "hombres": 77, "mujeres": 74 },
+    { "edad_min": 5.0,  "edad_max": 6.0,  "hombres": 74, "mujeres": 72 },
+    { "edad_min": 6.0,  "edad_max": 7.0,  "hombres": 73, "mujeres": 69 },
+    { "edad_min": 7.0,  "edad_max": 8.0,  "hombres": 71, "mujeres": 67 },
+    { "edad_min": 8.0,  "edad_max": 9.0,  "hombres": 69, "mujeres": 64 },
+    { "edad_min": 9.0,  "edad_max": 10.0, "hombres": 67, "mujeres": 61 },
+    { "edad_min": 10.0, "edad_max": 11.0, "hombres": 65, "mujeres": 58 },
+    { "edad_min": 11.0, "edad_max": 12.0, "hombres": 62, "mujeres": 56 },
+    { "edad_min": 12.0, "edad_max": 13.0, "hombres": 60, "mujeres": 52 },
+    { "edad_min": 13.0, "edad_max": 14.0, "hombres": 58, "mujeres": 49 },
+    { "edad_min": 14.0, "edad_max": 15.0, "hombres": 56, "mujeres": 47 },
+    { "edad_min": 15.0, "edad_max": 16.0, "hombres": 53, "mujeres": 46 },
+    { "edad_min": 16.0, "edad_max": 17.0, "hombres": 52, "mujeres": 44 },
+    { "edad_min": 17.0, "edad_max": 18.0, "hombres": 50, "mujeres": 44 }
+  ]
+}
