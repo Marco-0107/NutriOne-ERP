@@ -17,6 +17,7 @@ const formatCita = (cita) => ({
             nombres:          cita.paciente.usuario?.nombres          ?? "",
             apellido_paterno: cita.paciente.usuario?.apellido_paterno ?? "",
             apellido_materno: cita.paciente.usuario?.apellido_materno ?? "",
+            fecha_nacimiento: cita.paciente.fecha_nacimiento          ?? null,
         }
         : null,
     nutricionista: cita.usuario

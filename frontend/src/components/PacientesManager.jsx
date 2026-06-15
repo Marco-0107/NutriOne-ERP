@@ -816,7 +816,7 @@ const PacientesManager = () => {
                         Gestión de Pacientes
                     </h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-                        Registra y administra los pacientes del sistema NutriERP.
+                        Registra y administra los pacientes del sistema NutriOne ERP.
                     </p>
                 </div>
                 {hasPermission('pacientes:crear') && (

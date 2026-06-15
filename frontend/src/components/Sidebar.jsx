@@ -26,7 +26,7 @@ const Sidebar = () => {
         <aside className="sidebar">
             <div className="sidebar-logo">
                 <Activity size={24} style={{ color: 'var(--morado-primario)' }} />
-                <span style={{ fontWeight: 800 }}>NutriERP</span>
+                <span style={{ fontWeight: 800 }}>NutriOne ERP</span>
             </div>
 
             <div className="sidebar-user">

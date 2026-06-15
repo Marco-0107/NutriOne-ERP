@@ -10,7 +10,7 @@ const Dashboard = () => {
             <div className="welcome-card">
                 <h1 className="welcome-title">¡Bienvenido de vuelta, {user.nombres}!</h1>
                 <p className="welcome-text">
-                    Estás conectado en la plataforma NutriERP. Aquí tienes un resumen del estado del sistema y tus accesos rápidos.
+                    Estás conectado en la plataforma NutriOne ERP. Aquí tienes un resumen del estado del sistema y tus accesos rápidos.
                 </p>
             </div>
 

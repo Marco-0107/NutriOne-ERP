@@ -375,6 +375,16 @@ const Calendario = () => {
 	};
 
 	// ── Handlers: Atención Médica ────────────────────────────────────────────
+	const calcularEdadDesdeNacimiento = (fechaNacimiento) => {
+		if (!fechaNacimiento) return '';
+		const hoy = new Date();
+		const nac = new Date(fechaNacimiento);
+		let edad = hoy.getFullYear() - nac.getFullYear();
+		const cumpleEsteAnio = new Date(hoy.getFullYear(), nac.getMonth(), nac.getDate());
+		if (hoy < cumpleEsteAnio) edad--;
+		return edad >= 0 ? edad : '';
+	};
+
 	const openAtencionModal = async (cita) => {
 		setAtencionCita(cita);
 		setAtencionError('');
@@ -383,9 +393,11 @@ const Calendario = () => {
 		setAtencionEvaluacion(null);
 		calculoDataRef.current = null;
 		const today = new Date().toISOString().split('T')[0];
+		const edadAuto = calcularEdadDesdeNacimiento(cita.paciente?.fecha_nacimiento);
 		setAtencionForm({
 			...INITIAL_ATENCION_FORM,
 			fecha_atencion: cita.fecha || today,
+			edad: edadAuto,
 		});
 		setAtencionOpen(true);
 
@@ -404,7 +416,7 @@ const Calendario = () => {
 				setAtencionForm({
 					tipo:                    f.tipo                    ?? 'Control nutricional',
 					fecha_atencion:          f.fecha_atencion           ?? cita.fecha ?? today,
-					edad:                    f.edad                    ?? '',
+					edad:                    f.edad                    ?? edadAuto,
 					nombre_social:           f.nombre_social            ?? '',
 					sexo:                    f.sexo                    ?? '',
 					peso:                    f.peso                    ?? '',
