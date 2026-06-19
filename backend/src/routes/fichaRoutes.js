@@ -1,8 +1,16 @@
 const express = require("express");
 const router  = express.Router();
-const { getFichaByCita, createFicha, updateFicha } = require("../controllers/fichaController");
+const { getFichaByCita, createFicha, updateFicha, getFichasByPaciente } = require("../controllers/fichaController");
 const authMiddleware       = require("../middlewares/authMiddleware");
 const permissionMiddleware = require("../middlewares/permissionMiddleware");
+
+// GET  /fichas/paciente/:id_paciente → todas las fichas de un paciente (evolución clínica)
+router.get(
+    "/paciente/:id_paciente",
+    authMiddleware,
+    permissionMiddleware("fichas:ver"),
+    getFichasByPaciente
+);
 
 // GET  /fichas/cita/:id_cita  → obtener ficha por cita (o null si no existe)
 router.get(
