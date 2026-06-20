@@ -140,7 +140,7 @@ const getFichasByPaciente = async (req, res) => {
             .leftJoinAndSelect("cita.paciente", "paciente")
             .leftJoinAndSelect("paciente.usuario", "pacienteUsuario")
             .leftJoinAndSelect("cita.usuario", "nutricionista")
-            .where("pacienteUsuario.id = :id_paciente", { id_paciente })
+            .where("paciente.id = :id_paciente", { id_paciente })
             .orderBy("ficha.fecha_atencion", "ASC")
             .getMany();
 

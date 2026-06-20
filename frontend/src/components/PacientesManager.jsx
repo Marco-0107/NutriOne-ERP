@@ -615,10 +615,10 @@ const PacientesManager = () => {
 
     // Estado para el historial de atenciones
     const [historialPaciente, setHistorialPaciente] = useState(null);
-    // Tooltip del botón eliminar deshabilitado: guarda { id, x, y } para position:fixed
+    // Tooltip del botón eliminar deshabilitado
     const [hoveredDeleteId, setHoveredDeleteId] = useState(null);
-    // Menú de 3 puntos: guarda id + coords del botón para position:fixed (escapa overflow:hidden)
-    const [openMenu, setOpenMenu] = useState(null); // { id, right, top }
+    // Menú de 3 puntos
+    const [openMenu, setOpenMenu] = useState(null);
     const menuRef = useRef(null);
 
     const authHeaders = { Authorization: `Bearer ${token}` };
@@ -1012,7 +1012,7 @@ const PacientesManager = () => {
                                                     Evolución
                                                 </button>
 
-                                                {/* Botón Ver atenciones / ficha clínica */}
+                                                {/* Botón Ver atenciones*/}
                                                 <button
                                                     className="btn btn-secondary"
                                                     style={{
