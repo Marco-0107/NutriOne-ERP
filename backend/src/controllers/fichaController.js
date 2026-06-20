@@ -1,6 +1,7 @@
 const { AppDataSource } = require("../config/configDb");
 const { badRequest, serverError } = require("../handlers/errorHandler");
 
+
 /**
  * GET /fichas/cita/:id_cita
  * Obtiene la ficha clínica asociada a una cita.
@@ -123,4 +124,30 @@ const updateFicha = async (req, res) => {
     }
 };
 
-module.exports = { getFichaByCita, createFicha, updateFicha };
+/**
+ * GET /fichas/paciente/:id_paciente
+ * Retorna todas las fichas clínicas del paciente ordenadas por fecha_atencion ASC.
+ * Incluye datos de la cita y del profesional.
+ */
+const getFichasByPaciente = async (req, res) => {
+    const id_paciente = parseInt(req.params.id_paciente);
+    if (isNaN(id_paciente)) return badRequest(res, "El ID del paciente debe ser un número válido.");
+
+    try {
+        const fichas = await AppDataSource.getRepository("FichaClinica")
+            .createQueryBuilder("ficha")
+            .leftJoinAndSelect("ficha.cita", "cita")
+            .leftJoinAndSelect("cita.paciente", "paciente")
+            .leftJoinAndSelect("paciente.usuario", "pacienteUsuario")
+            .leftJoinAndSelect("cita.usuario", "nutricionista")
+            .where("paciente.id = :id_paciente", { id_paciente })
+            .orderBy("ficha.fecha_atencion", "ASC")
+            .getMany();
+
+        return res.json({ success: true, data: fichas });
+    } catch (err) {
+        return serverError(res, err, "fichaController.getFichasByPaciente");
+    }
+};
+
+module.exports = { getFichaByCita, createFicha, updateFicha, getFichasByPaciente };
