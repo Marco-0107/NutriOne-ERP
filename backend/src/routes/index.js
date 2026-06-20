@@ -9,6 +9,7 @@ const citaPublicaRoutes = require("./citaPublicaRoutes");
 const citaRoutes        = require("./citaRoutes");
 const fichaRoutes       = require("./fichaRoutes");
 const calculoRoutes     = require("./calculoRoutes");
+const alimentoRoutes    = require("./alimentoRoutes");
 
 const router = express.Router();
 
@@ -21,6 +22,7 @@ router.use("/disponibilidad", disponibilidadRoutes);
 router.use("/citas",   citaRoutes);
 router.use("/fichas",  fichaRoutes);
 router.use("/calculos", calculoRoutes);
+router.use("/alimentos", alimentoRoutes);
 router.use("/public",  citaPublicaRoutes);
 
 module.exports = router;
