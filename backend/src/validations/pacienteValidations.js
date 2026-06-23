@@ -10,6 +10,9 @@ const RUT_MESSAGES  = {
 const NOMBRE_PATTERN  = /^[\p{L}\s'.-]+$/u;
 const NOMBRE_MESSAGES = { "string.pattern.base": "Solo se permiten letras, espacios, guiones y puntos" };
 
+const PHONE_PATTERN  = /^\+?56[2-9]\d{8}$|^\+?[1-9]\d{7,14}$/;
+const PHONE_MESSAGES = { "string.pattern.base": "El teléfono debe ser un número válido (ej: +56912345678)" };
+
 // Los pacientes NO tienen correo ni contraseña gestionados externamente.
 // El backend genera credenciales internas al crear el usuario asociado.
 
@@ -71,7 +74,13 @@ const createPacienteSchema = Joi.object({
         .messages({
             "string.max": "La previsión no puede superar los 100 caracteres",
         }),
-});
+
+    telefono: Joi.string()
+        .pattern(PHONE_PATTERN)
+        .allow("", null)
+        .optional()
+        .messages(PHONE_MESSAGES),
+}).options({ stripUnknown: true });
 
 const updatePacienteSchema = Joi.object({
     rut: Joi.string()
@@ -123,6 +132,12 @@ const updatePacienteSchema = Joi.object({
         .messages({
             "string.max": "La previsión no puede superar los 100 caracteres",
         }),
-});
+
+    telefono: Joi.string()
+        .pattern(PHONE_PATTERN)
+        .allow("", null)
+        .optional()
+        .messages(PHONE_MESSAGES),
+}).options({ stripUnknown: true });
 
 module.exports = { createPacienteSchema, updatePacienteSchema };

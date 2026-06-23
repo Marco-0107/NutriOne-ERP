@@ -8,6 +8,7 @@ const formatPaciente = (paciente) => ({
     id:               paciente.id,
     fecha_nacimiento: paciente.fecha_nacimiento,
     prevision:        paciente.prevision,
+    telefono:         paciente.telefono ?? null,
     usuario: paciente.usuario
         ? {
               id:               paciente.usuario.id,
@@ -31,7 +32,7 @@ const getPacientesService = async () => {
 
 const createPacienteService = async ({
     rut, nombres, apellido_paterno, apellido_materno,
-    fecha_nacimiento, prevision,
+    fecha_nacimiento, prevision, telefono,
 }) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
@@ -67,6 +68,7 @@ const createPacienteService = async ({
         const newPaciente = pacienteRepo.create({
             fecha_nacimiento,
             prevision: prevision || null,
+            telefono:  telefono  || null,
             usuario:   savedUsuario,
         });
         const savedPaciente = await pacienteRepo.save(newPaciente);
@@ -89,7 +91,7 @@ const createPacienteService = async ({
 
 const updatePacienteService = async (pacienteId, {
     rut, nombres, apellido_paterno, apellido_materno,
-    fecha_nacimiento, prevision,
+    fecha_nacimiento, prevision, telefono,
 }) => {
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
@@ -128,6 +130,7 @@ const updatePacienteService = async (pacienteId, {
 
         if (fecha_nacimiento !== undefined) paciente.fecha_nacimiento = fecha_nacimiento;
         if (prevision        !== undefined) paciente.prevision        = prevision || null;
+        if (telefono         !== undefined) paciente.telefono         = telefono  || null;
         await pacienteRepo.save(paciente);
 
         await queryRunner.commitTransaction();
