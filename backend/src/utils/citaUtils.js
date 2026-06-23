@@ -8,4 +8,16 @@ function calcularDuracionMinutos(horaInicio, horaFin) {
     return (hF * 60 + mF) - (hI * 60 + mI);
 }
 
-module.exports = { calcularDuracionMinutos };
+/**
+ * Suma una cantidad de minutos a una hora 'HH:MM' y retorna 'HH:MM'.
+ * Ejemplo: sumarMinutosAHora('09:00', 45) → '09:45'
+ */
+function sumarMinutosAHora(hora, minutos) {
+    const [h, m] = hora.split(':').map(Number);
+    const totalMin = h * 60 + m + minutos;
+    const hF = Math.floor(totalMin / 60) % 24;
+    const mF = totalMin % 60;
+    return `${String(hF).padStart(2, '0')}:${String(mF).padStart(2, '0')}`;
+}
+
+module.exports = { calcularDuracionMinutos, sumarMinutosAHora };

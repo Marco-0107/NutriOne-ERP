@@ -1,5 +1,5 @@
 const { AppDataSource } = require("../config/configDb");
-const { calcularDuracionMinutos } = require("../utils/citaUtils");
+const { calcularDuracionMinutos, sumarMinutosAHora } = require("../utils/citaUtils");
 
 const formatCita = (cita) => ({
     id_cita:             cita.id_cita,
@@ -33,6 +33,15 @@ const formatCita = (cita) => ({
             id:               cita.servicio.id,
             nombre:           cita.servicio.nombre,
             duracion_minutos: cita.servicio.duracion_minutos,
+            precio:           cita.servicio.precio,
+            prevision:        cita.servicio.prevision,
+        }
+        : null,
+    pago: cita.transacciones?.[0]
+        ? {
+            id_transaccion: cita.transacciones[0].id_transaccion,
+            monto:          cita.transacciones[0].monto,
+            estado_pago:    cita.transacciones[0].estado_pago,
         }
         : null,
     fecha_creacion:      cita.fecha_creacion,
@@ -46,6 +55,7 @@ const getCitaConRelaciones = (citaId) =>
         .leftJoinAndSelect("paciente.usuario", "pacienteUsuario")
         .leftJoinAndSelect("cita.usuario", "usuario")
         .leftJoinAndSelect("cita.servicio", "servicio")
+        .leftJoinAndSelect("cita.transacciones", "transacciones")
         .where("cita.id_cita = :id", { id: citaId })
         .getOne();
 
@@ -78,7 +88,8 @@ const getCitasService = async (filtros = {}) => {
         .leftJoinAndSelect("cita.paciente", "paciente")
         .leftJoinAndSelect("paciente.usuario", "pacienteUsuario")
         .leftJoinAndSelect("cita.usuario", "usuario")
-        .leftJoinAndSelect("cita.servicio", "servicio");
+        .leftJoinAndSelect("cita.servicio", "servicio")
+        .leftJoinAndSelect("cita.transacciones", "transacciones");
 
     if (filtros.estado)      qb.andWhere("cita.estado = :estado",      { estado:      filtros.estado });
     if (filtros.id_usuario)  qb.andWhere("usuario.id = :id_usuario",   { id_usuario:  Number(filtros.id_usuario) });
@@ -106,6 +117,14 @@ const createCitaService = async ({ id_paciente, id_usuario, id_servicio, fecha, 
     const nutricionista = await AppDataSource.getRepository("Usuario").findOneBy({ id: id_usuario });
     if (!nutricionista) throw { status: 404, message: "Nutricionista no encontrado" };
 
+    let servicio = null;
+    if (id_servicio) {
+        servicio = await AppDataSource.getRepository("Servicio").findOneBy({ id: id_servicio });
+        if (!servicio) throw { status: 404, message: "Servicio no encontrado" };
+        // La duración del servicio puede ser distinta a la del slot de disponibilidad: manda el servicio.
+        hora_fin = sumarMinutosAHora(hora_inicio, servicio.duracion_minutos);
+    }
+
     if (hora_fin <= hora_inicio) {
         throw { status: 400, message: "La hora de fin debe ser posterior a la hora de inicio" };
     }
@@ -120,16 +139,23 @@ const createCitaService = async ({ id_paciente, id_usuario, id_servicio, fecha, 
         hora_fin,
         observacion: observacion ?? null,
         origen:      "interna",
+        servicio:    servicio ?? undefined,
     };
-
-    if (id_servicio) {
-        const servicio = await AppDataSource.getRepository("Servicio").findOneBy({ id: id_servicio });
-        if (!servicio) throw { status: 404, message: "Servicio no encontrado" };
-        citaData.servicio = servicio;
-    }
 
     const citaRepo = AppDataSource.getRepository("Cita");
     const saved    = await citaRepo.save(citaRepo.create(citaData));
+
+    if (servicio) {
+        await AppDataSource.getRepository("Transaccion").save(
+            AppDataSource.getRepository("Transaccion").create({
+                monto:       servicio.precio,
+                metodo_pago: "Por definir",
+                estado_pago: "pendiente",
+                cita:        saved,
+            })
+        );
+    }
+
     return formatCita(await getCitaConRelaciones(saved.id_cita));
 };
 
@@ -152,10 +178,15 @@ const updateCitaService = async (citaId, datos) => {
         cita.usuario = nutricionista;
     }
 
+    let servicio;
     if (id_servicio !== undefined) {
-        const servicio = await AppDataSource.getRepository("Servicio").findOneBy({ id: id_servicio });
-        if (!servicio) throw { status: 404, message: "Servicio no encontrado" };
-        cita.servicio = servicio;
+        if (id_servicio === null) {
+            cita.servicio = null;
+        } else {
+            servicio = await AppDataSource.getRepository("Servicio").findOneBy({ id: id_servicio });
+            if (!servicio) throw { status: 404, message: "Servicio no encontrado" };
+            cita.servicio = servicio;
+        }
     }
 
     if (fecha              !== undefined) cita.fecha              = fecha;
@@ -165,16 +196,42 @@ const updateCitaService = async (citaId, datos) => {
     if (motivo_cancelacion !== undefined) cita.motivo_cancelacion = motivo_cancelacion;
     if (observacion        !== undefined) cita.observacion        = observacion;
 
+    // La duración del servicio puede ser distinta a la del slot: manda el servicio si se asignó/cambió uno.
+    if (servicio) {
+        cita.hora_fin = sumarMinutosAHora(cita.hora_inicio.substring(0, 5), servicio.duracion_minutos);
+    }
+
     const hi = cita.hora_inicio.substring(0, 5);
     const hf = cita.hora_fin.substring(0, 5);
     if (hf <= hi) throw { status: 400, message: "La hora de fin debe ser posterior a la hora de inicio" };
 
-    if (fecha !== undefined || hora_inicio !== undefined || hora_fin !== undefined || id_usuario !== undefined) {
+    if (fecha !== undefined || hora_inicio !== undefined || hora_fin !== undefined || id_usuario !== undefined || servicio) {
         await verificarSinConflicto(cita.usuario.id, cita.fecha, hi, hf, citaId);
     }
 
     const updated = await AppDataSource.getRepository("Cita").save(cita);
-    return formatCita(updated);
+
+    // Mantiene el pago pendiente sincronizado con el valor del servicio (no toca pagos ya procesados).
+    if (servicio) {
+        const transaccionRepo = AppDataSource.getRepository("Transaccion");
+        const pendiente = await transaccionRepo.findOne({ where: { cita: { id_cita: citaId }, estado_pago: "pendiente" } });
+        if (pendiente) {
+            pendiente.monto = servicio.precio;
+            await transaccionRepo.save(pendiente);
+        } else {
+            const existeAlguna = await transaccionRepo.findOne({ where: { cita: { id_cita: citaId } } });
+            if (!existeAlguna) {
+                await transaccionRepo.save(transaccionRepo.create({
+                    monto:       servicio.precio,
+                    metodo_pago: "Por definir",
+                    estado_pago: "pendiente",
+                    cita:        updated,
+                }));
+            }
+        }
+    }
+
+    return formatCita(await getCitaConRelaciones(citaId));
 };
 
 const cancelarCitaService = async (citaId, motivo_cancelacion) => {
