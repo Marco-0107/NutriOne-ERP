@@ -16,6 +16,7 @@ const EMPTY_FORM = {
     apellido_materno: '',
     fecha_nacimiento: '',
     prevision:        '',
+    telefono:         '',
 };
 
 // ── Helpers compartidos ────────────────────────────────────────────────────
@@ -695,6 +696,7 @@ const PacientesManager = () => {
             apellido_materno: paciente.usuario?.apellido_materno || '',
             fecha_nacimiento: paciente.fecha_nacimiento || '',
             prevision:        paciente.prevision        || '',
+            telefono:         paciente.telefono         || '',
         });
         setFormError('');
         setIsModalOpen(true);
@@ -1311,6 +1313,20 @@ const PacientesManager = () => {
                                             <option value="Particular">Particular</option>
                                         </select>
                                     </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="form-label" htmlFor="pac-telefono">
+                                        TELÉFONO <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '11px' }}>(para verificación de evolución online)</span>
+                                    </label>
+                                    <input
+                                        id="pac-telefono"
+                                        type="tel"
+                                        className="form-input"
+                                        placeholder="Ej: +56912345678"
+                                        value={formData.telefono}
+                                        onChange={handleChange('telefono')}
+                                    />
                                 </div>
                             </div>
 

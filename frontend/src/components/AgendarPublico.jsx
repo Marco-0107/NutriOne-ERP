@@ -336,6 +336,12 @@ const AgendarPublico = () => {
                     <p>Reserva tu hora de atención nutricional de manera rápida y sencilla</p>
                 </div>
 
+                {step === 1 && (
+                    <p style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', margin: '0 0 16px' }}>
+                        ¿Ya eres paciente? <a href="/evolucion-publica" style={{ color: 'var(--morado-primario)', fontWeight: 600 }}>Revisa tu evolución aquí</a>
+                    </p>
+                )}
+
                 <div className="public-booking-body">
                     {/* Progress Steps */}
                     <div className="public-step-indicator">
