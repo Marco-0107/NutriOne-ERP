@@ -1,0 +1,19 @@
+{
+  "indicador": "imc_edad",
+  "referencia": "MUESTRA SINTÉTICA — NO USAR CLÍNICAMENTE",
+  "variableX": "edad_meses",
+  "uso_clinico": false,
+  "_nota": "Ejemplo de FORMATO únicamente. Valores L,M,S inventados para ilustrar el esquema. El loader ignora este archivo (uso_clinico=false y nombre .sample.json). Reemplazar por la tabla oficial OMS guardada como 'imc_edad.json' para activar el indicador.",
+  "datos": {
+    "M": [
+      { "x": 60, "L": -1.0, "M": 15.2, "S": 0.080 },
+      { "x": 72, "L": -1.1, "M": 15.4, "S": 0.082 },
+      { "x": 84, "L": -1.2, "M": 15.6, "S": 0.085 }
+    ],
+    "F": [
+      { "x": 60, "L": -0.9, "M": 15.0, "S": 0.085 },
+      { "x": 72, "L": -1.0, "M": 15.2, "S": 0.088 },
+      { "x": 84, "L": -1.1, "M": 15.5, "S": 0.090 }
+    ]
+  }
+}

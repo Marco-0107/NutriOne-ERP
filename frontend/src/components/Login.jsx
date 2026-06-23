@@ -33,7 +33,7 @@ const Login = () => {
                     <div style={{ display: 'inline-flex', padding: '14px', background: 'var(--lavanda-suave)', borderRadius: '16px', color: 'var(--morado-primario)' }}>
                         <LogIn size={32} />
                     </div>
-                    <h1 className="auth-title">NutriERP</h1>
+                    <h1 className="auth-title">NutriOne ERP</h1>
                     <p className="auth-subtitle">ERP PARA NUTRICIONISTAS</p>
                 </div>
 

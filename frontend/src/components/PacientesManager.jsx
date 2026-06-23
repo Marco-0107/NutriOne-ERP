@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
     Plus, Edit2, Trash2, X, Users, AlertCircle, CheckCircle2, Search,
     ClipboardList, ClipboardPlus, Clock3, UserRound, CalendarDays,
     CircleCheckBig, Ban, Weight, Calculator, Apple, ChevronDown,
-    ChevronLeft, MapPin,
+    ChevronLeft, MapPin, MoreVertical, TrendingUp,
 } from 'lucide-react';
 import { apiUrl } from '../helpers/api';
 
@@ -598,6 +599,7 @@ const ModalHistorialAtenciones = ({ paciente, token, onClose }) => {
 // Componente principal: PacientesManager
 const PacientesManager = () => {
     const { token, hasPermission } = useAuth();
+    const navigate = useNavigate();
     const [pacientes, setPacientes]               = useState([]);
     const [pacientesConCitas, setPacientesConCitas] = useState(new Set());
     const [loading, setLoading]                   = useState(true);
@@ -613,8 +615,11 @@ const PacientesManager = () => {
 
     // Estado para el historial de atenciones
     const [historialPaciente, setHistorialPaciente] = useState(null);
-    // Tooltip del botón eliminar deshabilitado: guarda { id, x, y } para position:fixed
+    // Tooltip del botón eliminar deshabilitado
     const [hoveredDeleteId, setHoveredDeleteId] = useState(null);
+    // Menú de 3 puntos
+    const [openMenu, setOpenMenu] = useState(null);
+    const menuRef = useRef(null);
 
     const authHeaders = { Authorization: `Bearer ${token}` };
 
@@ -657,6 +662,22 @@ const PacientesManager = () => {
     };
 
     useEffect(() => { fetchData(); }, [token]);
+
+    // Cerrar menú al hacer clic fuera o al hacer scroll
+    useEffect(() => {
+        const close = () => setOpenMenu(null);
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) close();
+        };
+        if (openMenu !== null) {
+            document.addEventListener('mousedown', handleClickOutside);
+            window.addEventListener('scroll', close, true);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', close, true);
+        };
+    }, [openMenu]);
 
     const openCreateModal = () => {
         setEditingPaciente(null);
@@ -816,7 +837,7 @@ const PacientesManager = () => {
                         Gestión de Pacientes
                     </h2>
                     <p style={{ color: 'var(--text-secondary)', fontSize: '14px', marginTop: '4px' }}>
-                        Registra y administra los pacientes del sistema NutriERP.
+                        Registra y administra los pacientes del sistema NutriOne ERP.
                     </p>
                 </div>
                 {hasPermission('pacientes:crear') && (
@@ -971,64 +992,70 @@ const PacientesManager = () => {
                                             </span>
                                         </td>
                                         <td style={{ padding: '14px 16px' }}>
-                                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'nowrap' }}>
-                                                    {hasPermission('pacientes:editar') && (
+                                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'nowrap' }}>
+                                                {/* Botón Evolución Clínica */}
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    style={{
+                                                        padding: '6px 14px',
+                                                        fontSize: '12px',
+                                                        color: 'var(--morado-primario)',
+                                                        borderColor: 'rgba(109,40,217,0.25)',
+                                                        background: 'rgba(109,40,217,0.06)',
+                                                        fontWeight: 700,
+                                                        gap: '6px',
+                                                    }}
+                                                    onClick={() => navigate(`/pacientes/${paciente.id}/evolucion`)}
+                                                    title="Ver evolución clínica"
+                                                >
+                                                    <TrendingUp size={13} />
+                                                    Evolución
+                                                </button>
+
+                                                {/* Botón Ver atenciones*/}
+                                                <button
+                                                    className="btn btn-secondary"
+                                                    style={{
+                                                        padding: '6px 14px',
+                                                        fontSize: '12px',
+                                                        color: '#0F766E',
+                                                        borderColor: 'rgba(20,184,166,0.25)',
+                                                        background: 'rgba(20,184,166,0.06)',
+                                                        fontWeight: 700,
+                                                        gap: '6px',
+                                                    }}
+                                                    onClick={() => setHistorialPaciente(paciente)}
+                                                    title="Ver historial de atenciones"
+                                                >
+                                                    <ClipboardList size={13} />
+                                                    Atenciones
+                                                </button>
+
+                                                {/* Menú 3 puntos */}
+                                                {(hasPermission('pacientes:editar') || hasPermission('pacientes:eliminar')) && (
+                                                    <div ref={openMenu?.id === paciente.id ? menuRef : null}>
                                                         <button
                                                             className="btn btn-secondary"
-                                                            style={{ padding: '6px 12px', fontSize: '12px' }}
-                                                            onClick={() => openEditModal(paciente)}
-                                                        >
-                                                            <Edit2 size={13} /> Editar
-                                                        </button>
-                                                    )}
-                                                    {/* Botón Eliminar con tooltip personalizado */}
-                                                    {hasPermission('pacientes:eliminar') && (() => {
-                                                        const tieneCitas = pacientesConCitas.has(paciente.id);
-                                                        return (
-                                                            <div
-                                                                style={{ position: 'relative', display: 'inline-flex' }}
-                                                                onMouseEnter={(e) => {
-                                                                    if (!tieneCitas) return;
+                                                            style={{ padding: '6px 8px', fontSize: '12px' }}
+                                                            title="Más opciones"
+                                                            onClick={(e) => {
+                                                                if (openMenu?.id === paciente.id) {
+                                                                    setOpenMenu(null);
+                                                                } else {
                                                                     const rect = e.currentTarget.getBoundingClientRect();
-                                                                    setHoveredDeleteId({
+                                                                    setOpenMenu({
                                                                         id: paciente.id,
-                                                                        x: rect.left + rect.width / 2,
-                                                                        y: rect.top - 10,
+                                                                        right: window.innerWidth - rect.right,
+                                                                        top: rect.bottom + 6,
                                                                     });
-                                                                }}
-                                                                onMouseLeave={() => setHoveredDeleteId(null)}
-                                                            >
-                                                                <button
-                                                                    className="btn btn-secondary"
-                                                                    disabled={tieneCitas}
-                                                                    style={{
-                                                                        padding: '6px 12px', fontSize: '12px',
-                                                                        ...(tieneCitas
-                                                                            ? { color: '#9CA3AF', borderColor: 'rgba(156,163,175,0.3)', background: 'rgba(156,163,175,0.07)', cursor: 'not-allowed', opacity: 0.7 }
-                                                                            : { color: '#f87171', borderColor: 'rgba(239,68,68,0.25)' }
-                                                                        ),
-                                                                    }}
-                                                                    onClick={() => !tieneCitas && handleDelete(paciente)}
-                                                                >
-                                                                    <Trash2 size={13} /> Eliminar
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                    <button
-                                                        className="btn btn-secondary"
-                                                        style={{
-                                                            padding: '6px 12px', fontSize: '12px',
-                                                            color: '#6D28D9',
-                                                            borderColor: 'rgba(109,40,217,0.25)',
-                                                            background: 'rgba(109,40,217,0.05)',
-                                                        }}
-                                                        onClick={() => setHistorialPaciente(paciente)}
-                                                        title="Ver historial de atenciones"
-                                                    >
-                                                        <ClipboardList size={13} /> Ver ficha clínica
-                                                    </button>
-                                                </div>
+                                                                }
+                                                            }}
+                                                        >
+                                                            <MoreVertical size={15} />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -1044,6 +1071,82 @@ const PacientesManager = () => {
                     </div>
                 </div>
             )}
+
+            {/* Dropdown menú 3 puntos — position:fixed para escapar overflow:hidden de la tabla */}
+            {openMenu && (() => {
+                const tieneCitas = pacientesConCitas.has(openMenu.id);
+                const pacienteMenu = pacientes.find(p => p.id === openMenu.id);
+                if (!pacienteMenu) return null;
+                return (
+                    <div
+                        ref={menuRef}
+                        style={{
+                            position: 'fixed',
+                            right: openMenu.right,
+                            top: openMenu.top,
+                            background: 'var(--bg-card)',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: 'var(--radius-md)',
+                            boxShadow: 'var(--shadow-lg)',
+                            zIndex: 9998,
+                            minWidth: '160px',
+                            overflow: 'hidden',
+                            animation: 'slideIn 0.15s ease-out',
+                        }}
+                    >
+                        {hasPermission('pacientes:editar') && (
+                            <button
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '8px',
+                                    width: '100%', padding: '10px 14px',
+                                    background: 'none', border: 'none',
+                                    cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+                                    color: 'var(--text-secondary)',
+                                    transition: 'background var(--transition-fast)',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-tertiary)'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                                onClick={() => { openEditModal(pacienteMenu); setOpenMenu(null); }}
+                            >
+                                <Edit2 size={13} /> Editar
+                            </button>
+                        )}
+                        {hasPermission('pacientes:eliminar') && (
+                            <div
+                                onMouseEnter={(e) => {
+                                    if (!tieneCitas) return;
+                                    const rect = e.currentTarget.getBoundingClientRect();
+                                    setHoveredDeleteId({
+                                        id: openMenu.id,
+                                        x: rect.left + rect.width / 2,
+                                        y: rect.top - 10,
+                                    });
+                                }}
+                                onMouseLeave={() => setHoveredDeleteId(null)}
+                            >
+                                <button
+                                    disabled={tieneCitas}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '8px',
+                                        width: '100%', padding: '10px 14px',
+                                        background: 'none', border: 'none',
+                                        cursor: tieneCitas ? 'not-allowed' : 'pointer',
+                                        fontSize: '13px', fontWeight: 600,
+                                        color: tieneCitas ? '#9CA3AF' : '#f87171',
+                                        opacity: tieneCitas ? 0.6 : 1,
+                                        transition: 'background var(--transition-fast)',
+                                    }}
+                                    onMouseEnter={e => { if (!tieneCitas) e.currentTarget.style.background = 'rgba(239,68,68,0.07)'; }}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                                    onClick={() => { if (!tieneCitas) { handleDelete(pacienteMenu); setOpenMenu(null); } }}
+                                >
+                                    <Trash2 size={13} /> Eliminar
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                );
+            })()}
 
             {/* Tooltip de eliminar — renderizado fuera de la tabla para evitar clipping por overflow */}
             {hoveredDeleteId && (

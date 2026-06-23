@@ -14,6 +14,7 @@ import AgendarPublico from './components/AgendarPublico';
 import DisponibilidadManager from './components/DisponibilidadManager';
 import RegistroPaciente from './components/RegistroPaciente';
 import BasesNutricionales from './components/BasesNutricionales';
+import EvolucionClinica from './components/EvolucionClinica';
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -34,7 +35,7 @@ const AppContent = () => {
                 fontSize: '16px',
                 fontFamily: "'Outfit', sans-serif"
             }}>
-                Cargando portal NutriERP...
+                Cargando portal NutriOne ERP...
             </div>
         );
     }
@@ -76,7 +77,9 @@ const AppContent = () => {
             case '/agendar':
                 return 'Agendar Cita';
             default:
-                return 'NutriERP';
+                if (location.pathname.startsWith('/pacientes/') && location.pathname.endsWith('/evolucion'))
+                    return 'Evolución Clínica';
+                return 'NutriOne ERP';
         }
     };
 
@@ -130,6 +133,12 @@ const AppContent = () => {
                             <Route path="/pacientes" element={<PacientesManager />} />
                         ) : (
                             <Route path="/pacientes" element={<Navigate to="/" replace />} />
+                        )}
+
+                        {hasPermission('pacientes:ver') ? (
+                            <Route path="/pacientes/:id/evolucion" element={<EvolucionClinica />} />
+                        ) : (
+                            <Route path="/pacientes/:id/evolucion" element={<Navigate to="/" replace />} />
                         )}
 
                         {hasPermission('usuarios:ver') ? (
