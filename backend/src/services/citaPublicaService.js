@@ -2,6 +2,7 @@ const { AppDataSource } = require("../config/configDb");
 const { Between, Not, In } = require("typeorm");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
+const { sumarMinutosAHora } = require("../utils/citaUtils");
 
 /**
  * Get all active nutricionistas.
@@ -36,9 +37,29 @@ const getNutricionistasPublicoService = async () => {
 };
 
 /**
+ * Get all active servicios offered by a given nutricionista (public, read-only).
+ */
+const getServiciosPublicoService = async (nutricionistaId) => {
+    const servicioRepo = AppDataSource.getRepository("Servicio");
+    const servicios = await servicioRepo.find({
+        where: { usuario: { id: parseInt(nutricionistaId) }, estado: "activo" },
+        order: { nombre: "ASC" },
+    });
+
+    return servicios.map((s) => ({
+        id: s.id,
+        nombre: s.nombre,
+        descripcion: s.descripcion,
+        precio: s.precio,
+        duracion_minutos: s.duracion_minutos,
+        prevision: s.prevision,
+    }));
+};
+
+/**
  * Get available slots of 30 mins for a given nutricionista and date.
  */
-const getDisponibilidadPublicaService = async (nutricionistaId, fecha) => {
+const getDisponibilidadPublicaService = async (nutricionistaId, fecha, duracionOverride = null) => {
     const dias = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
     const parts = fecha.split('-');
     const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
@@ -87,9 +108,10 @@ const getDisponibilidadPublicaService = async (nutricionistaId, fecha) => {
         return slots;
     };
 
+    // Si se especifica un servicio, sus minutos de duración mandan sobre el slot estándar del bloque.
     let allSlots = [];
     for (const d of disponibilidades) {
-        const slots = generateSlots(d.hora_inicio, d.hora_fin, d.duracion_minutos || 30);
+        const slots = generateSlots(d.hora_inicio, d.hora_fin, duracionOverride || d.duracion_minutos || 30);
         allSlots = allSlots.concat(slots);
     }
 
@@ -278,6 +300,18 @@ const agendarCitaPublicaService = async (data) => {
             throw { status: 404, message: "Nutricionista no encontrado o inactivo" };
         }
 
+        // 2.1 Validate the servicio (opcional) and derive hora_fin from its duration
+        let servicio = null;
+        let horaFin = data.hora_fin;
+        if (data.id_servicio) {
+            const servicioRepo = queryRunner.manager.getRepository("Servicio");
+            servicio = await servicioRepo.findOneBy({ id: data.id_servicio });
+            if (!servicio) {
+                throw { status: 404, message: "Servicio no encontrado" };
+            }
+            horaFin = sumarMinutosAHora(data.hora_inicio.substring(0, 5), servicio.duracion_minutos);
+        }
+
         // 3. Check conflict
         const conflictingCitas = await citaRepo.find({
             where: {
@@ -291,7 +325,7 @@ const agendarCitaPublicaService = async (data) => {
             const citaInicio = cita.hora_inicio.substring(0, 5);
             const citaFin = cita.hora_fin.substring(0, 5);
             const reqInicio = data.hora_inicio.substring(0, 5);
-            const reqFin = data.hora_fin.substring(0, 5);
+            const reqFin = horaFin.substring(0, 5);
             return reqInicio < citaFin && reqFin > citaInicio;
         });
 
@@ -303,15 +337,27 @@ const agendarCitaPublicaService = async (data) => {
         const newCita = citaRepo.create({
             fecha: data.fecha,
             hora_inicio: data.hora_inicio,
-            hora_fin: data.hora_fin,
+            hora_fin: horaFin,
             observacion: data.observacion || null,
             estado: "pendiente",
             origen: "publica",
             paciente: paciente,
             usuario: nutricionista,
+            servicio: servicio ?? undefined,
         });
 
         const savedCita = await citaRepo.save(newCita);
+
+        if (servicio) {
+            const transaccionRepo = queryRunner.manager.getRepository("Transaccion");
+            await transaccionRepo.save(transaccionRepo.create({
+                monto:       servicio.precio,
+                metodo_pago: "Por definir",
+                estado_pago: "pendiente",
+                cita:        savedCita,
+            }));
+        }
+
         await queryRunner.commitTransaction();
 
         return {
@@ -331,6 +377,9 @@ const agendarCitaPublicaService = async (data) => {
                 id: nutricionista.id,
                 nombres: `${nutricionista.nombres} ${nutricionista.apellido_paterno}`,
             },
+            servicio: servicio
+                ? { id: servicio.id, nombre: servicio.nombre, precio: servicio.precio, duracion_minutos: servicio.duracion_minutos }
+                : null,
         };
 
     } catch (error) {
@@ -343,6 +392,7 @@ const agendarCitaPublicaService = async (data) => {
 
 module.exports = {
     getNutricionistasPublicoService,
+    getServiciosPublicoService,
     getDisponibilidadPublicaService,
     agendarCitaPublicaService,
     getCitasPublicasCalendarioService,

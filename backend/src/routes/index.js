@@ -10,6 +10,7 @@ const citaRoutes        = require("./citaRoutes");
 const fichaRoutes       = require("./fichaRoutes");
 const calculoRoutes     = require("./calculoRoutes");
 const alimentoRoutes    = require("./alimentoRoutes");
+const servicioRoutes    = require("./servicioRoutes");
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.use("/permisos",  permisoRoutes);
 router.use("/usuarios",  usuarioRoutes);
 router.use("/pacientes", pacienteRoutes);
 router.use("/disponibilidad", disponibilidadRoutes);
+router.use("/servicios", servicioRoutes);
 router.use("/citas",   citaRoutes);
 router.use("/fichas",  fichaRoutes);
 router.use("/calculos", calculoRoutes);

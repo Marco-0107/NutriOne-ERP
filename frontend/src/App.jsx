@@ -12,6 +12,7 @@ import UsuariosManager from './components/UsuariosManager';
 
 import AgendarPublico from './components/AgendarPublico';
 import DisponibilidadManager from './components/DisponibilidadManager';
+import ServiciosManager from './components/ServiciosManager';
 import RegistroPaciente from './components/RegistroPaciente';
 import BasesNutricionales from './components/BasesNutricionales';
 import EvolucionClinica from './components/EvolucionClinica';
@@ -72,6 +73,8 @@ const AppContent = () => {
                 return 'Registro de Paciente';
             case '/disponibilidad':
                 return 'Disponibilidad Horaria';
+            case '/servicios':
+                return 'Servicios';
             case '/nutricion':
                 return 'Bases Nutricionales';
             case '/agendar':
@@ -127,6 +130,12 @@ const AppContent = () => {
                             <Route path="/disponibilidad" element={<DisponibilidadManager />} />
                         ) : (
                             <Route path="/disponibilidad" element={<Navigate to="/" replace />} />
+                        )}
+
+                        {hasPermission('servicios:ver') ? (
+                            <Route path="/servicios" element={<ServiciosManager />} />
+                        ) : (
+                            <Route path="/servicios" element={<Navigate to="/" replace />} />
                         )}
 
                         {hasPermission('pacientes:ver') ? (

@@ -29,6 +29,11 @@ module.exports = new EntitySchema({
             type: "int",
             nullable: false,
         },
+        prevision: {
+            type: "varchar",
+            length: 50,
+            default: "particular",
+        },
         estado: {
             type: "varchar",
             length: 50,

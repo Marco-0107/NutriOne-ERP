@@ -8,6 +8,8 @@ const AgendarPublico = () => {
 
     const [step, setStep]                       = useState(1);
     const [nutricionistas, setNutricionistas]   = useState([]);
+    const [servicios, setServicios]             = useState([]);
+    const [loadingServicios, setLoadingServicios] = useState(false);
     const [slots, setSlots]                     = useState([]);
     const [loadingSlots, setLoadingSlots]       = useState(false);
     const [error, setError]                     = useState('');
@@ -28,6 +30,7 @@ const AgendarPublico = () => {
         fecha_nacimiento: '',
         telefono: '',
         id_usuario: '',
+        id_servicio: '',
         fecha: '',
         hora_inicio: '',
         hora_fin: '',
@@ -70,13 +73,35 @@ const AgendarPublico = () => {
     }, []);
 
     useEffect(() => {
+        if (!formData.id_usuario) {
+            setServicios([]);
+            return;
+        }
+        const fetchServicios = async () => {
+            setLoadingServicios(true);
+            try {
+                const res  = await fetch(apiUrl(`/public/servicios/${formData.id_usuario}`));
+                const json = await res.json();
+                setServicios(json.success ? json.data : []);
+            } catch {
+                setServicios([]);
+            } finally {
+                setLoadingServicios(false);
+            }
+        };
+        fetchServicios();
+    }, [formData.id_usuario]);
+
+    useEffect(() => {
         if (formData.id_usuario && formData.fecha) {
             const fetchSlots = async () => {
                 setLoadingSlots(true);
                 setError('');
                 setSlots([]);
                 try {
-                    const res  = await fetch(apiUrl(`/public/disponibilidad/${formData.id_usuario}?fecha=${formData.fecha}`));
+                    const servicioSeleccionado = servicios.find(s => String(s.id) === formData.id_servicio);
+                    const duracionParam = servicioSeleccionado ? `&duracion=${servicioSeleccionado.duracion_minutos}` : '';
+                    const res  = await fetch(apiUrl(`/public/disponibilidad/${formData.id_usuario}?fecha=${formData.fecha}${duracionParam}`));
                     const json = await res.json();
                     if (json.success) {
                         setSlots(json.data);
@@ -94,11 +119,16 @@ const AgendarPublico = () => {
             };
             fetchSlots();
         }
-    }, [formData.id_usuario, formData.fecha]);
+    }, [formData.id_usuario, formData.fecha, formData.id_servicio]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+            ...((name === 'id_usuario' || name === 'id_servicio') && { hora_inicio: '', hora_fin: '' }),
+            ...(name === 'id_usuario' && { id_servicio: '' }),
+        }));
     };
 
     const handleSlotSelect = (slot) => {
@@ -253,10 +283,17 @@ const AgendarPublico = () => {
         setError('');
 
         try {
+            const body = {
+                ...formData,
+                id_usuario: Number(formData.id_usuario),
+                ...(formData.id_servicio ? { id_servicio: Number(formData.id_servicio) } : { id_servicio: undefined }),
+                verification_token: verificationToken,
+            };
+
             const res  = await fetch(apiUrl('/public/agendar'), {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ ...formData, verification_token: verificationToken }),
+                body:    JSON.stringify(body),
             });
             const json = await res.json();
 
@@ -447,6 +484,26 @@ const AgendarPublico = () => {
                                 </div>
 
                                 <div className="form-group">
+                                    <label htmlFor="id_servicio" className="form-label">Servicio</label>
+                                    <select
+                                        id="id_servicio"
+                                        name="id_servicio"
+                                        className="form-input"
+                                        value={formData.id_servicio}
+                                        onChange={handleInputChange}
+                                        disabled={!formData.id_usuario}
+                                    >
+                                        <option value="">-- Sin servicio asociado --</option>
+                                        {servicios.map(s => (
+                                            <option key={s.id} value={s.id}>
+                                                {s.nombre} · {s.duracion_minutos} min · {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(s.precio)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {loadingServicios && <small style={{ color: 'var(--text-muted)', fontSize: '12px', marginTop: '4px', display: 'block' }}>Cargando servicios...</small>}
+                                </div>
+
+                                <div className="form-group">
                                     <label htmlFor="fecha" className="form-label">Fecha de Atención</label>
                                     <input type="date" id="fecha" name="fecha" min={getMinDate()} className="form-input" value={formData.fecha} onChange={handleInputChange} required />
                                 </div>
@@ -507,6 +564,10 @@ const AgendarPublico = () => {
                                     ['Nutricionista', bookedCita.nutricionista.nombres],
                                     ['Fecha',         formatFechaBonita(bookedCita.fecha)],
                                     ['Horario',       `${bookedCita.hora_inicio.substring(0, 5)} - ${bookedCita.hora_fin.substring(0, 5)}`],
+                                    ...(bookedCita.servicio ? [
+                                        ['Servicio', bookedCita.servicio.nombre],
+                                        ['Valor',    new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(bookedCita.servicio.precio)],
+                                    ] : []),
                                 ].map(([label, value], i, arr) => (
                                     <div key={label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: i < arr.length - 1 ? '12px' : 0, borderBottom: i < arr.length - 1 ? '1px solid var(--border-color)' : 'none', paddingBottom: i < arr.length - 1 ? '8px' : 0 }}>
                                         <span style={{ fontWeight: 600, color: 'var(--text-secondary)' }}>{label}:</span>

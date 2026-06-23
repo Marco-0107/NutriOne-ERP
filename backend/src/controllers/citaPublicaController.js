@@ -1,6 +1,7 @@
 const { citaPublicaSchema, enviarOtpSchema, verificarOtpSchema } = require("../validations/citaValidations");
 const {
     getNutricionistasPublicoService,
+    getServiciosPublicoService,
     getDisponibilidadPublicaService,
     agendarCitaPublicaService,
     getCitasPublicasCalendarioService,
@@ -16,6 +17,20 @@ const getNutricionistas = async (req, res) => {
         return res.json({ success: true, data });
     } catch (err) {
         return serverError(res, err, "citaPublicaController.getNutricionistas");
+    }
+};
+
+const getServicios = async (req, res) => {
+    const nutricionistaId = parseInt(req.params.nutricionistaId);
+    if (isNaN(nutricionistaId)) {
+        return badRequest(res, "El ID del nutricionista debe ser un número válido");
+    }
+
+    try {
+        const data = await getServiciosPublicoService(nutricionistaId);
+        return res.json({ success: true, data });
+    } catch (err) {
+        return serverError(res, err, "citaPublicaController.getServicios");
     }
 };
 
@@ -37,8 +52,10 @@ const getDisponibilidad = async (req, res) => {
         return badRequest(res, "No se puede consultar disponibilidad para fechas pasadas");
     }
 
+    const duracion = req.query.duracion ? parseInt(req.query.duracion) : null;
+
     try {
-        const data = await getDisponibilidadPublicaService(nutricionistaId, fecha);
+        const data = await getDisponibilidadPublicaService(nutricionistaId, fecha, duracion);
         return res.json({ success: true, data });
     } catch (err) {
         if (err.status) {
@@ -158,4 +175,4 @@ const agendarCita = async (req, res) => {
     }
 };
 
-module.exports = { getNutricionistas, getDisponibilidad, getCitasPublicasCalendario, enviarOtp, verificarOtp, agendarCita };
+module.exports = { getNutricionistas, getServicios, getDisponibilidad, getCitasPublicasCalendario, enviarOtp, verificarOtp, agendarCita };

@@ -156,6 +156,32 @@ const SEED_PERMISSIONS = [
         descripcion: "Permite crear, editar y eliminar bloques de disponibilidad horaria"
     },
 
+    // ─────────────── Módulo: Servicios ───────────────
+    {
+        nombre: "Ver Pestaña de Servicios",
+        codigo: "servicios:ver",
+        modulo: "Servicios",
+        descripcion: "Permite ver la pestaña de servicios y listar los servicios definidos por los profesionales"
+    },
+    {
+        nombre: "Crear Servicios",
+        codigo: "servicios:crear",
+        modulo: "Servicios",
+        descripcion: "Permite definir nuevos servicios con su valor, duración y previsión asociada"
+    },
+    {
+        nombre: "Editar Servicios",
+        codigo: "servicios:editar",
+        modulo: "Servicios",
+        descripcion: "Permite editar servicios existentes"
+    },
+    {
+        nombre: "Eliminar Servicios",
+        codigo: "servicios:eliminar",
+        modulo: "Servicios",
+        descripcion: "Permite eliminar (desactivar) servicios del sistema"
+    },
+
     // ─────────────── Módulo: Calendario ───────────────}
     {
         nombre: "Ver Calendario",
