@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList, Clock, CalendarDays, Salad } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList, Clock, CalendarDays, Salad, Briefcase } from 'lucide-react';
 
 
 const Sidebar = () => {
@@ -78,6 +78,16 @@ const Sidebar = () => {
                     >
                         <Clock size={18} />
                         <span>Disponibilidad</span>
+                    </NavLink>
+                )}
+
+                {hasPermission('servicios:ver') && (
+                    <NavLink
+                        to="/servicios"
+                        className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    >
+                        <Briefcase size={18} />
+                        <span>Servicios</span>
                     </NavLink>
                 )}
 

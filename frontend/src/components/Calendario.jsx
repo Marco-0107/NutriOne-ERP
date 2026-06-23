@@ -18,6 +18,8 @@ import {
 	UserRoundPlus,
 	UserRound,
 	Weight,
+	Wallet,
+	ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
@@ -43,6 +45,11 @@ const INITIAL_CREATE_FORM = {
 	hora_fin: '',
 	observacion: '',
 };
+
+const formatCLP = (value) =>
+	new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Number(value) || 0);
+
+const PREVISION_LABELS = { particular: 'Particular', fonasa: 'Fonasa', isapre: 'Isapre' };
 
 const formatDate = (date) =>
 	new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(date);
@@ -81,10 +88,12 @@ const Calendario = () => {
 	const [citas, setCitas] = useState([]);
 	const [pacientes, setPacientes] = useState([]);
 	const [nutricionistas, setNutricionistas] = useState([]);
+	const [servicios, setServicios] = useState([]);
 	const [slots, setSlots] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [pacientesLoading, setPacientesLoading] = useState(false);
 	const [nutricionistasLoading, setNutricionistasLoading] = useState(false);
+	const [serviciosLoading, setServiciosLoading] = useState(false);
 	const [slotsLoading, setSlotsLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [pacientesError, setPacientesError] = useState('');
@@ -210,17 +219,34 @@ const Calendario = () => {
 		fetchCitas();
 	}, [weekDays]);
 
-	const fetchSlots = async (nutricionistaId, fecha) => {
+	const fetchSlots = async (nutricionistaId, fecha, duracionMinutos) => {
 		if (!nutricionistaId || !fecha) { setSlots([]); return; }
 		setSlotsLoading(true);
 		try {
-			const response = await fetch(apiUrl(`/public/disponibilidad/${nutricionistaId}?fecha=${fecha}`));
+			const duracionParam = duracionMinutos ? `&duracion=${duracionMinutos}` : '';
+			const response = await fetch(apiUrl(`/public/disponibilidad/${nutricionistaId}?fecha=${fecha}${duracionParam}`));
 			const data = await response.json();
 			setSlots(response.ok ? (data.data || []) : []);
 		} catch {
 			setSlots([]);
 		} finally {
 			setSlotsLoading(false);
+		}
+	};
+
+	const fetchServicios = async (nutricionistaId) => {
+		if (!nutricionistaId || !token) { setServicios([]); return; }
+		setServiciosLoading(true);
+		try {
+			const response = await fetch(apiUrl(`/servicios?id_user=${nutricionistaId}`), {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			const data = await response.json();
+			setServicios(response.ok ? (data.data || []) : []);
+		} catch {
+			setServicios([]);
+		} finally {
+			setServiciosLoading(false);
 		}
 	};
 
@@ -241,6 +267,7 @@ const Calendario = () => {
 		if (createOpen) {
 			fetchPacientes();
 			if (!isCurrentUserNutricionista) fetchNutricionistas();
+			else fetchServicios(currentUserId);
 		}
 	}, [createOpen, token]);
 
@@ -290,9 +317,11 @@ const Calendario = () => {
 		});
 		setCreateError('');
 		setSlots([]);
+		setServicios([]);
 		setCreateOpen(true);
 		if (isCurrentUserNutricionista && currentUserId) {
-			fetchSlots(currentUserId, fecha);
+			const duracion = cita?.servicio?.duracion_minutos;
+			fetchSlots(currentUserId, fecha, duracion);
 		}
 	};
 
@@ -301,6 +330,7 @@ const Calendario = () => {
 		setCreateError('');
 		setCreateForm(INITIAL_CREATE_FORM);
 		setSlots([]);
+		setServicios([]);
 	};
 
 	const handleCreateChange = (field) => (e) => {
@@ -310,14 +340,24 @@ const Calendario = () => {
 	const handleFechaChange = (e) => {
 		const fecha = e.target.value;
 		const nutId = isCurrentUserNutricionista ? currentUserId : createForm.id_usuario;
+		const servicioSeleccionado = servicios.find((s) => String(s.id) === createForm.id_servicio);
 		setCreateForm((prev) => ({ ...prev, fecha, hora_inicio: '', hora_fin: '' }));
-		fetchSlots(nutId, fecha);
+		fetchSlots(nutId, fecha, servicioSeleccionado?.duracion_minutos);
 	};
 
 	const handleNutricionistaChange = (e) => {
 		const id_usuario = e.target.value;
-		setCreateForm((prev) => ({ ...prev, id_usuario, hora_inicio: '', hora_fin: '' }));
+		setCreateForm((prev) => ({ ...prev, id_usuario, id_servicio: '', hora_inicio: '', hora_fin: '' }));
+		fetchServicios(id_usuario);
 		fetchSlots(id_usuario, createForm.fecha);
+	};
+
+	const handleServicioChange = (e) => {
+		const id_servicio = e.target.value;
+		const servicioSeleccionado = servicios.find((s) => String(s.id) === id_servicio);
+		const nutId = isCurrentUserNutricionista ? currentUserId : createForm.id_usuario;
+		setCreateForm((prev) => ({ ...prev, id_servicio, hora_inicio: '', hora_fin: '' }));
+		fetchSlots(nutId, createForm.fecha, servicioSeleccionado?.duracion_minutos);
 	};
 
 	const handleSlotChange = (e) => {
@@ -779,6 +819,16 @@ const Calendario = () => {
 															<MapPin size={15} style={{ color: style.accent }} />
 															{serviceName}
 														</div>
+														{cita.servicio && (
+															<div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+																<Wallet size={15} style={{ color: style.accent }} />
+																{formatCLP(cita.servicio.precio)}
+																<span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', marginLeft: '4px', background: 'rgba(0,0,0,0.04)', borderRadius: '999px', padding: '2px 8px', fontSize: '12px', fontWeight: 600 }}>
+																	<ShieldCheck size={12} />
+																	{PREVISION_LABELS[cita.servicio.prevision] || cita.servicio.prevision}
+																</span>
+															</div>
+														)}
 													</div>
 
 													<p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.45 }}>
@@ -884,6 +934,23 @@ const Calendario = () => {
 												{nutricionistasLoading && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>Cargando nutricionistas...</div>}
 											</div>
 										)}
+								</div>
+								<div className="form-group">
+									<label className="form-label">Servicio</label>
+									<select
+										className="form-input"
+										value={createForm.id_servicio}
+										onChange={handleServicioChange}
+										disabled={!(isCurrentUserNutricionista ? currentUserId : createForm.id_usuario)}
+									>
+										<option value="">Sin servicio asociado</option>
+										{servicios.map((s) => (
+											<option key={s.id} value={s.id}>
+												{s.nombre} · {s.duracion_minutos} min · {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(s.precio)} ({s.prevision})
+											</option>
+										))}
+									</select>
+									{serviciosLoading && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>Cargando servicios...</div>}
 								</div>
 								<div className="form-group">
 									<label className="form-label">Horario disponible</label>
