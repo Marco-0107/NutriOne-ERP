@@ -16,6 +16,7 @@ import ServiciosManager from './components/ServiciosManager';
 import RegistroPaciente from './components/RegistroPaciente';
 import BasesNutricionales from './components/BasesNutricionales';
 import EvolucionClinica from './components/EvolucionClinica';
+import EvolucionPublica from './components/EvolucionPublica';
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -48,6 +49,11 @@ const AppContent = () => {
                 <Route path="/agendar" element={
                     <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
                         <AgendarPublico />
+                    </GoogleReCaptchaProvider>
+                } />
+                <Route path="/evolucion-publica" element={
+                    <GoogleReCaptchaProvider reCaptchaKey={RECAPTCHA_SITE_KEY}>
+                        <EvolucionPublica />
                     </GoogleReCaptchaProvider>
                 } />
                 <Route path="*" element={<Navigate to="/login" />} />
