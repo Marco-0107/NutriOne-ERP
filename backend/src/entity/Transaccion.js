@@ -39,6 +39,10 @@ module.exports = new EntitySchema({
             unique: true,
             nullable: true,
         },
+        notas: {
+            type: "text",
+            nullable: true,
+        },
     },
     relations: {
         cita: {
@@ -46,6 +50,14 @@ module.exports = new EntitySchema({
             target: "Cita",
             inverseSide: "transacciones",
             joinColumn: { name: "id_cita" },
+            onDelete: "CASCADE",
+        },
+        cobro: {
+            type: "many-to-one",
+            target: "Cobro",
+            inverseSide: "pagos",
+            joinColumn: { name: "id_cobro" },
+            nullable: true,
             onDelete: "CASCADE",
         },
     },

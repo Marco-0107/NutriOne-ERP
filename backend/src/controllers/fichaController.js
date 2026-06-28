@@ -1,5 +1,6 @@
 const { AppDataSource } = require("../config/configDb");
 const { badRequest, serverError } = require("../handlers/errorHandler");
+const { generarCobro } = require("../services/cajaService");
 
 
 /**
@@ -42,21 +43,32 @@ const createFicha = async (req, res) => {
     if (!fecha_atencion) return badRequest(res, "La fecha de atención es requerida.");
     if (!edad)           return badRequest(res, "La edad es requerida.");
 
-    try {
-        // Verificar que la cita exista
-        const cita = await AppDataSource.getRepository("Cita").findOne({
-            where: { id_cita },
-            relations: { fichaClinica: true },
-        });
-        if (!cita) return res.status(404).json({ success: false, message: "Cita no encontrada." });
-        if (cita.fichaClinica) return res.status(409).json({ success: false, message: "Esta cita ya tiene una ficha clínica registrada." });
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-        const fichaRepo = AppDataSource.getRepository("FichaClinica");
+    try {
+        // 1. Verificar que la cita exista y no tenga ficha ya (dentro de la transacción)
+        const cita = await queryRunner.manager.findOne("Cita", {
+            where: { id_cita },
+            relations: { fichaClinica: true, servicio: true },
+        });
+        if (!cita) {
+            await queryRunner.rollbackTransaction();
+            return res.status(404).json({ success: false, message: "Cita no encontrada." });
+        }
+        if (cita.fichaClinica) {
+            await queryRunner.rollbackTransaction();
+            return res.status(409).json({ success: false, message: "Esta cita ya tiene una ficha clínica registrada." });
+        }
+
+        // 2. Guardar la ficha
+        const fichaRepo = queryRunner.manager.getRepository("FichaClinica");
         const nueva = fichaRepo.create({
             cita,
             tipo,
             fecha_atencion,
-            edad: parseInt(edad),
+            edad:                   parseInt(edad),
             nombre_social:          nombre_social          ?? null,
             sexo:                   sexo                   ?? null,
             peso:                   peso  ? parseFloat(peso)  : null,
@@ -72,17 +84,29 @@ const createFicha = async (req, res) => {
             derivaciones:           derivaciones           ?? null,
             estado: "activo",
         });
-
         const saved = await fichaRepo.save(nueva);
 
-        // Marcar la cita como completada
-        await AppDataSource.getRepository("Cita").update({ id_cita }, { estado: "completada" });
+        // 3. Marcar la cita como completada
+        await queryRunner.manager.update("Cita", { id_cita }, { estado: "completada" });
 
+        // 4. Generar cobro solo si la cita tiene servicio con precio
+        if (cita.servicio && cita.servicio.precio != null) {
+            await generarCobro(id_cita, queryRunner);
+        } else {
+            console.warn(`[fichaController] Cita ${id_cita} completada sin cobro: sin servicio con precio.`);
+        }
+
+        await queryRunner.commitTransaction();
         return res.status(201).json({ success: true, data: saved });
+
     } catch (err) {
+        await queryRunner.rollbackTransaction();
         return serverError(res, err, "fichaController.createFicha");
+    } finally {
+        await queryRunner.release();
     }
 };
+
 
 /**
  * PUT /fichas/:id_ficha
