@@ -8,6 +8,7 @@ import {
     ChevronLeft, MapPin, MoreVertical, TrendingUp,
 } from 'lucide-react';
 import { apiUrl } from '../helpers/api';
+import PanelMinuta from './PanelMinuta';
 
 const EMPTY_FORM = {
     rut:              '',
@@ -64,6 +65,8 @@ const ModalAtencion = ({ cita, token, onClose }) => {
     const [usaNombreSocial, setUsaNombreSocial]     = useState(false);
     const [panelCalcOpen, setPanelCalcOpen]         = useState(false);
     const [panelAlimOpen, setPanelAlimOpen]         = useState(false);
+    const [minutaState, setMinutaState]             = useState(null);
+    const [objetivoCalorico, setObjetivoCalorico]   = useState(null);
 
     const { hasPermission } = useAuth();
 
@@ -80,6 +83,7 @@ const ModalAtencion = ({ cita, token, onClose }) => {
                     const f = data.data;
                     setFicha(f);
                     if (f.nombre_social) setUsaNombreSocial(true);
+                    if (f.minuta)        setMinutaState(f.minuta);
                     setAtencionForm({
                         tipo:                    f.tipo                    ?? 'Control nutricional',
                         fecha_atencion:          f.fecha_atencion           ?? cita.fecha ?? today,
@@ -98,6 +102,13 @@ const ModalAtencion = ({ cita, token, onClose }) => {
                         derivaciones:            f.derivaciones             ?? '',
                         observacion:             f.observacion              ?? '',
                     });
+                    // Cargar objetivo calórico desde la evaluación nutricional
+                    fetch(apiUrl(`/calculos/ficha/${f.id_ficha}`), {
+                        headers: { Authorization: `Bearer ${token}` },
+                    })
+                        .then(r => r.json())
+                        .then(ev => { if (ev.data?.get) setObjetivoCalorico(Number(ev.data.get)); })
+                        .catch(() => {});
                 }
             })
             .catch(() => {})
@@ -133,6 +144,7 @@ const ModalAtencion = ({ cita, token, onClose }) => {
                 ...(atencionForm.recomendaciones.trim()         && { recomendaciones:          atencionForm.recomendaciones.trim() }),
                 ...(atencionForm.derivaciones.trim()            && { derivaciones:             atencionForm.derivaciones.trim() }),
                 ...(atencionForm.observacion.trim()             && { observacion:              atencionForm.observacion.trim() }),
+                minuta: minutaState ?? null,
             };
 
             const url    = ficha ? apiUrl(`/fichas/${ficha.id_ficha}`) : apiUrl(`/fichas/cita/${cita.id_cita}`);
@@ -324,13 +336,13 @@ const ModalAtencion = ({ cita, token, onClose }) => {
                                     <ChevronDown size={16} color="#15803D" style={{ transition: 'transform 0.2s', transform: panelAlimOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                                 </button>
                                 {panelAlimOpen && (
-                                    <div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: 'var(--bg-card)' }}>
-                                        <Apple size={32} color="#15803D" style={{ opacity: 0.25 }} />
-                                        <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
-                                            <strong style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>Próximamente</strong>
-                                            Búsqueda de alimentos con valores nutricionales.
-                                        </p>
-                                    </div>
+                                    <PanelMinuta
+                                        value={minutaState}
+                                        onChange={setMinutaState}
+                                        objetivoCalorico={objetivoCalorico}
+                                        token={token}
+                                        disabled={!canEdit}
+                                    />
                                 )}
                             </div>
 
