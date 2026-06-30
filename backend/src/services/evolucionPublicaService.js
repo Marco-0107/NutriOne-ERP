@@ -81,6 +81,7 @@ const formatFichaPublica = (ficha) => ({
     recomendaciones:         ficha.recomendaciones,
     derivaciones:            ficha.derivaciones,
     estado:                  ficha.estado,
+    minuta:                  ficha.minuta ?? null,
     cita: ficha.cita?.usuario
         ? {
             usuario: {

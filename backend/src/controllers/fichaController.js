@@ -37,7 +37,7 @@ const createFicha = async (req, res) => {
     const id_cita = parseInt(req.params.id_cita);
     if (isNaN(id_cita)) return badRequest(res, "El ID de la cita debe ser un número válido.");
 
-    const { tipo, fecha_atencion, edad, nombre_social, sexo, peso, talla, presion_arterial, circunferencia_cintura, calculos, diagnostico_nutricional, motivo_consulta, observacion, indicaciones, recomendaciones, derivaciones } = req.body;
+    const { tipo, fecha_atencion, edad, nombre_social, sexo, peso, talla, presion_arterial, circunferencia_cintura, calculos, diagnostico_nutricional, motivo_consulta, observacion, indicaciones, recomendaciones, derivaciones, minuta } = req.body;
 
     if (!tipo)           return badRequest(res, "El tipo de atención es requerido.");
     if (!fecha_atencion) return badRequest(res, "La fecha de atención es requerida.");
@@ -82,6 +82,7 @@ const createFicha = async (req, res) => {
             indicaciones:           indicaciones           ?? null,
             recomendaciones:        recomendaciones        ?? null,
             derivaciones:           derivaciones           ?? null,
+            minuta:                 minuta                 ?? null,
             estado: "activo",
         });
         const saved = await fichaRepo.save(nueva);
@@ -116,7 +117,7 @@ const updateFicha = async (req, res) => {
     const id_ficha = parseInt(req.params.id_ficha);
     if (isNaN(id_ficha)) return badRequest(res, "El ID de la ficha debe ser un número válido.");
 
-    const { tipo, fecha_atencion, edad, nombre_social, sexo, peso, talla, presion_arterial, circunferencia_cintura, calculos, diagnostico_nutricional, motivo_consulta, observacion, indicaciones, recomendaciones, derivaciones, estado } = req.body;
+    const { tipo, fecha_atencion, edad, nombre_social, sexo, peso, talla, presion_arterial, circunferencia_cintura, calculos, diagnostico_nutricional, motivo_consulta, observacion, indicaciones, recomendaciones, derivaciones, minuta, estado } = req.body;
 
     try {
         const fichaRepo = AppDataSource.getRepository("FichaClinica");
@@ -139,6 +140,7 @@ const updateFicha = async (req, res) => {
         if (indicaciones            !== undefined) ficha.indicaciones            = indicaciones;
         if (recomendaciones         !== undefined) ficha.recomendaciones         = recomendaciones;
         if (derivaciones            !== undefined) ficha.derivaciones            = derivaciones;
+        if (minuta                  !== undefined) ficha.minuta                  = minuta;
         if (estado                  !== undefined) ficha.estado                  = estado;
 
         const updated = await fichaRepo.save(ficha);

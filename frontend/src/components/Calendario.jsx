@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
 import CalculosNutricionales from './CalculosNutricionales';
+import PanelMinuta from './PanelMinuta';
 
 const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const WEEKDAY_SHORT = ['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'];
@@ -138,6 +139,8 @@ const Calendario = () => {
 	const [panelCalculadoraOpen, setPanelCalculadoraOpen] = useState(false);
 	const [panelAlimentosOpen, setPanelAlimentosOpen] = useState(false);
 	const [atencionEvaluacion, setAtencionEvaluacion] = useState(null); // evaluación nutricional existente
+	const [minutaState, setMinutaState]               = useState(null); // minuta dietética de la atención
+	const [objetivoCalorico, setObjetivoCalorico]     = useState(null); // GET en kcal/día
 	const calculoDataRef = useRef(null); // datos en vivo de la calculadora (sin re-render)
 
 	const [dayGroupIndex, setDayGroupIndex] = useState(0);
@@ -442,6 +445,8 @@ const Calendario = () => {
 			edad: edadAuto,
 		});
 		setAtencionOpen(true);
+		setMinutaState(null);
+		setObjetivoCalorico(null);
 
 		// Intentar cargar ficha existente
 		setAtencionFetchLoading(true);
@@ -473,6 +478,8 @@ const Calendario = () => {
 					derivaciones:            f.derivaciones             ?? '',
 					observacion:             f.observacion              ?? '',
 				});
+				// Cargar minuta guardada
+				if (f.minuta) setMinutaState(f.minuta);
 
 				// Cargar evaluación nutricional existente (si hay y se tiene permiso)
 				try {
@@ -480,7 +487,10 @@ const Calendario = () => {
 						headers: { Authorization: `Bearer ${token}` },
 					});
 					const evData = await evRes.json();
-					if (evRes.ok && evData.data) setAtencionEvaluacion(evData.data);
+					if (evRes.ok && evData.data) {
+						setAtencionEvaluacion(evData.data);
+						if (evData.data.get) setObjetivoCalorico(Number(evData.data.get));
+					}
 				} catch { /* sin evaluación previa */ }
 			}
 		} catch { /* silencioso */ } finally {
@@ -498,6 +508,8 @@ const Calendario = () => {
 		setPanelCalculadoraOpen(false);
 		setPanelAlimentosOpen(false);
 		setAtencionEvaluacion(null);
+		setMinutaState(null);
+		setObjetivoCalorico(null);
 		calculoDataRef.current = null;
 	};
 
@@ -541,6 +553,9 @@ const Calendario = () => {
 			// Volcar diagnóstico y resumen generados por la calculadora hacia la ficha.
 			if (calc?.diagnostico) body.diagnostico_nutricional = calc.diagnostico;
 			if (calc?.resumen)     body.calculos                = calc.resumen;
+
+			// Incluir la minuta dietética (siempre, incluso si está vacía).
+			body.minuta = minutaState ?? null;
 
 			let res;
 			if (atencionFicha) {
@@ -636,6 +651,10 @@ const Calendario = () => {
 			setCancelLoading(false);
 		}
 	};
+
+	const canEditAtencion = atencionCita
+		? (atencionCita.estado === 'completada' ? hasPermission('fichas:editar') : hasPermission('fichas:crear'))
+		: false;
 
 	return (
 		<div style={{ animation: 'slideIn 0.3s ease-out' }}>
@@ -1219,7 +1238,11 @@ const Calendario = () => {
 													initial={atencionEvaluacion}
 													token={token}
 													canGestionar={hasPermission('calculos:gestionar')}
-													onChange={(d) => { calculoDataRef.current = d; }}
+													onChange={(d) => {
+										calculoDataRef.current = d;
+										const get = d?.ev?.energetico?.get ?? null;
+										setObjetivoCalorico(get ? Number(get) : null);
+									}}
 												/>
 											) : (
 												<div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
@@ -1243,13 +1266,13 @@ const Calendario = () => {
 											<ChevronDown size={16} color="#15803D" style={{ transition: 'transform 0.2s', transform: panelAlimentosOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
 										</button>
 										{panelAlimentosOpen && (
-											<div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: 'var(--bg-card)' }}>
-												<Apple size={32} color="#15803D" style={{ opacity: 0.25 }} />
-												<p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
-													<strong style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>Próximamente</strong>
-													Búsqueda de alimentos con valores nutricionales<br />(calorías, proteínas, carbohidratos, grasas, etc.)
-												</p>
-											</div>
+											<PanelMinuta
+												value={minutaState}
+												onChange={setMinutaState}
+												objetivoCalorico={objetivoCalorico}
+												token={token}
+												disabled={!canEditAtencion}
+											/>
 										)}
 									</div>
 

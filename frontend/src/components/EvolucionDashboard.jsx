@@ -213,6 +213,78 @@ const KpiCard = ({ icon: Icon, label, value, unit, delta, color, sub }) => {
     );
 };
 
+// ── Sub: Minuta solo lectura ──────────────────────────────────────────────────
+const MinutaReadOnly = ({ minuta }) => {
+    if (!minuta?.tiempos?.length) return null;
+
+    const calcNut = (ali) => ({
+        kcal: Math.round(((ali.por_100g?.calorias       ?? 0) * ali.gramos) / 100),
+        prot: +((      (ali.por_100g?.proteinas      ?? 0) * ali.gramos) / 100).toFixed(1),
+        carb: +((      (ali.por_100g?.carbohidratos  ?? 0) * ali.gramos) / 100).toFixed(1),
+        gras: +((      (ali.por_100g?.grasas         ?? 0) * ali.gramos) / 100).toFixed(1),
+    });
+
+    const sumar = (alimentos) => alimentos.reduce((acc, ali) => {
+        const n = calcNut(ali);
+        return {
+            kcal: acc.kcal + n.kcal,
+            prot: +(acc.prot + n.prot).toFixed(1),
+            carb: +(acc.carb + n.carb).toFixed(1),
+            gras: +(acc.gras + n.gras).toFixed(1),
+        };
+    }, { kcal: 0, prot: 0, carb: 0, gras: 0 });
+
+    const tiemposConAlimentos = minuta.tiempos.filter(t => t.alimentos?.length > 0);
+    if (!tiemposConAlimentos.length) return null;
+
+    const totalGlobal = sumar(tiemposConAlimentos.flatMap(t => t.alimentos));
+
+    return (
+        <div style={{ marginTop: '14px', background: 'rgba(16,185,129,0.04)', border: '1px solid rgba(16,185,129,0.18)', borderRadius: 'var(--radius-sm)', padding: '14px' }}>
+            <p style={{ fontSize: '11px', fontWeight: 800, color: '#10B981', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '10px' }}>
+                Minuta dietética
+            </p>
+
+            {/* Totales globales */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px', background: 'rgba(16,185,129,0.10)', borderRadius: '8px', padding: '10px 12px' }}>
+                {[
+                    { label: 'Calorías',  val: `${totalGlobal.kcal} kcal` },
+                    { label: 'Proteínas', val: `${totalGlobal.prot} g` },
+                    { label: 'Carbohid.', val: `${totalGlobal.carb} g` },
+                    { label: 'Grasas',    val: `${totalGlobal.gras} g` },
+                ].map(m => (
+                    <div key={m.label} style={{ textAlign: 'center', flex: 1, minWidth: '60px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: '#10B981' }}>{m.val}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, marginTop: '2px' }}>{m.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Por tiempo de comida */}
+            {tiemposConAlimentos.map(t => {
+                const tot = sumar(t.alimentos);
+                return (
+                    <div key={t.id} style={{ marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--text-secondary)', padding: '4px 0', borderBottom: '1px solid rgba(16,185,129,0.20)', marginBottom: '6px' }}>
+                            <span>{t.nombre}</span>
+                            <span style={{ color: '#10B981' }}>{tot.kcal} kcal</span>
+                        </div>
+                        {t.alimentos.map(ali => {
+                            const n = calcNut(ali);
+                            return (
+                                <div key={ali.uid} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)', padding: '3px 0' }}>
+                                    <span>{ali.icono} {ali.nombre} <span style={{ color: 'var(--text-muted)' }}>({ali.gramos} g)</span></span>
+                                    <span style={{ fontWeight: 600, color: 'var(--text-muted)', flexShrink: 0 }}>{n.kcal} kcal</span>
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
 // ── Sub: Modal Detalle Control ────────────────────────────────────────────────
 const ModalDetalleControl = ({ ficha, onClose }) => {
     if (!ficha) return null;
@@ -283,6 +355,7 @@ const ModalDetalleControl = ({ ficha, onClose }) => {
                             <p style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{ficha.calculos}</p>
                         </div>
                     )}
+                    <MinutaReadOnly minuta={ficha.minuta} />
                 </div>
                 <div className="modal-footer">
                     <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>

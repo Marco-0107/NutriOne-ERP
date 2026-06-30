@@ -84,6 +84,10 @@ module.exports = new EntitySchema({
             type: "text",
             nullable: true,
         },
+        minuta: {
+            type: "jsonb",
+            nullable: true,
+        },
         estado: {
             type: "varchar",
             length: 50,
