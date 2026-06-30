@@ -18,6 +18,7 @@ import BasesNutricionales from './components/BasesNutricionales';
 import EvolucionClinica from './components/EvolucionClinica';
 import EvolucionPublica from './components/EvolucionPublica';
 import CajaManager from './components/CajaManager';
+import ReportesManager from './components/ReportesManager';
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -84,6 +85,8 @@ const AppContent = () => {
                 return 'Servicios';
             case '/caja':
                 return 'Caja y Pagos';
+            case '/reportes':
+                return 'Reportes';
             case '/nutricion':
                 return 'Bases Nutricionales';
             case '/agendar':
@@ -169,6 +172,12 @@ const AppContent = () => {
                             <Route path="/usuarios" element={<UsuariosManager />} />
                         ) : (
                             <Route path="/usuarios" element={<Navigate to="/" replace />} />
+                        )}
+
+                        {hasPermission('caja:ver') ? (
+                            <Route path="/reportes" element={<ReportesManager />} />
+                        ) : (
+                            <Route path="/reportes" element={<Navigate to="/" replace />} />
                         )}
 
                         <Route path="*" element={<Navigate to="/" replace />} />

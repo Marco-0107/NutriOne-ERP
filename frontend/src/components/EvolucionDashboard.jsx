@@ -3,7 +3,10 @@ import {
     Weight, Calculator, Ruler, Activity, TrendingUp,
     Calendar, UserRound, ClipboardList, X,
     Stethoscope, ArrowUpRight, ArrowDownRight, ArrowRight,
+    FileText, Loader,
 } from 'lucide-react';
+import { generarPDFSesion, fetchCitaCompleta } from '../helpers/reportes';
+import { useAuth } from '../context/AuthContext';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const getFullName = (u) =>
@@ -288,9 +291,23 @@ const MinutaReadOnly = ({ minuta }) => {
 // ── Sub: Modal Detalle Control ────────────────────────────────────────────────
 const ModalDetalleControl = ({ ficha, onClose }) => {
     if (!ficha) return null;
+    const { token } = useAuth();
+    const [loadingPDF, setLoadingPDF] = useState(false);
+
     const imc         = calcIMC(ficha.peso, ficha.talla);
     const clasificacion = clasificarIMC(imc);
     const nutriNombre = getFullName(ficha.cita?.usuario);
+
+    const handlePDFSesion = async () => {
+        if (!ficha.cita?.id_cita) return;
+        setLoadingPDF(true);
+        try {
+            const { cita, ficha: fichaFull, evaluacion } = await fetchCitaCompleta(ficha.cita.id_cita, token);
+            generarPDFSesion(cita, fichaFull, evaluacion);
+        } catch (err) {
+            alert(`Error al generar PDF: ${err.message}`);
+        } finally { setLoadingPDF(false); }
+    };
 
     const rows = [
         { label: 'Tipo de atención',        value: ficha.tipo },
@@ -357,7 +374,21 @@ const ModalDetalleControl = ({ ficha, onClose }) => {
                     )}
                     <MinutaReadOnly minuta={ficha.minuta} />
                 </div>
-                <div className="modal-footer">
+                <div className="modal-footer" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    {ficha.cita?.id_cita && (
+                        <button
+                            className="btn btn-primary"
+                            onClick={handlePDFSesion}
+                            disabled={loadingPDF}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+                        >
+                            {loadingPDF
+                                ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                                : <FileText size={14} />
+                            }
+                            {loadingPDF ? 'Generando...' : 'PDF Sesión'}
+                        </button>
+                    )}
                     <button className="btn btn-secondary" onClick={onClose}>Cerrar</button>
                 </div>
             </div>
