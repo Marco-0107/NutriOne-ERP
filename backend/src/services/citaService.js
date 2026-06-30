@@ -1,5 +1,6 @@
 const { AppDataSource } = require("../config/configDb");
 const { calcularDuracionMinutos, sumarMinutosAHora } = require("../utils/citaUtils");
+const { generarCobro } = require("./cajaService");
 
 const formatCita = (cita) => ({
     id_cita:             cita.id_cita,
@@ -145,16 +146,7 @@ const createCitaService = async ({ id_paciente, id_usuario, id_servicio, fecha, 
     const citaRepo = AppDataSource.getRepository("Cita");
     const saved    = await citaRepo.save(citaRepo.create(citaData));
 
-    if (servicio) {
-        await AppDataSource.getRepository("Transaccion").save(
-            AppDataSource.getRepository("Transaccion").create({
-                monto:       servicio.precio,
-                metodo_pago: "Por definir",
-                estado_pago: "pendiente",
-                cita:        saved,
-            })
-        );
-    }
+    // El cobro se genera al marcar la cita como 'realizada' (ver updateCitaService).
 
     return formatCita(await getCitaConRelaciones(saved.id_cita));
 };
@@ -209,26 +201,25 @@ const updateCitaService = async (citaId, datos) => {
         await verificarSinConflicto(cita.usuario.id, cita.fecha, hi, hf, citaId);
     }
 
-    const updated = await AppDataSource.getRepository("Cita").save(cita);
+    const marcandoCompletada = estado === "completada" && cita.estado !== "completada";
 
-    // Mantiene el pago pendiente sincronizado con el valor del servicio (no toca pagos ya procesados).
-    if (servicio) {
-        const transaccionRepo = AppDataSource.getRepository("Transaccion");
-        const pendiente = await transaccionRepo.findOne({ where: { cita: { id_cita: citaId }, estado_pago: "pendiente" } });
-        if (pendiente) {
-            pendiente.monto = servicio.precio;
-            await transaccionRepo.save(pendiente);
-        } else {
-            const existeAlguna = await transaccionRepo.findOne({ where: { cita: { id_cita: citaId } } });
-            if (!existeAlguna) {
-                await transaccionRepo.save(transaccionRepo.create({
-                    monto:       servicio.precio,
-                    metodo_pago: "Por definir",
-                    estado_pago: "pendiente",
-                    cita:        updated,
-                }));
-            }
+    if (marcandoCompletada) {
+        // Atómico: la cita pasa a 'completada' y se genera el cobro en la misma transacción.
+        const queryRunner = AppDataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            await queryRunner.manager.save("Cita", cita);
+            await generarCobro(citaId, queryRunner);
+            await queryRunner.commitTransaction();
+        } catch (err) {
+            await queryRunner.rollbackTransaction();
+            throw err;
+        } finally {
+            await queryRunner.release();
         }
+    } else {
+        await AppDataSource.getRepository("Cita").save(cita);
     }
 
     return formatCita(await getCitaConRelaciones(citaId));

@@ -86,5 +86,10 @@ module.exports = new EntitySchema({
             target: "Transaccion",
             inverseSide: "cita",
         },
+        cobro: {
+            type: "one-to-one",
+            target: "Cobro",
+            inverseSide: "cita",
+        },
     },
 });

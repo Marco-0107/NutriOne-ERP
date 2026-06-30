@@ -17,6 +17,7 @@ import RegistroPaciente from './components/RegistroPaciente';
 import BasesNutricionales from './components/BasesNutricionales';
 import EvolucionClinica from './components/EvolucionClinica';
 import EvolucionPublica from './components/EvolucionPublica';
+import CajaManager from './components/CajaManager';
 
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
@@ -81,6 +82,8 @@ const AppContent = () => {
                 return 'Disponibilidad Horaria';
             case '/servicios':
                 return 'Servicios';
+            case '/caja':
+                return 'Caja y Pagos';
             case '/nutricion':
                 return 'Bases Nutricionales';
             case '/agendar':
@@ -142,6 +145,12 @@ const AppContent = () => {
                             <Route path="/servicios" element={<ServiciosManager />} />
                         ) : (
                             <Route path="/servicios" element={<Navigate to="/" replace />} />
+                        )}
+
+                        {hasPermission('caja:ver') ? (
+                            <Route path="/caja" element={<CajaManager />} />
+                        ) : (
+                            <Route path="/caja" element={<Navigate to="/" replace />} />
                         )}
 
                         {hasPermission('pacientes:ver') ? (

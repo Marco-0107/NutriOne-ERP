@@ -201,6 +201,26 @@ const SEED_PERMISSIONS = [
         codigo: "calculos:gestionar",
         modulo: "Cálculos Nutricionales",
         descripcion: "Permite guardar y actualizar la evaluación nutricional (mediciones y resultados) de una atención"
+    },
+
+    // ─────────────── Módulo: Caja y Pagos ───────────────
+    {
+        nombre: "Ver Caja",
+        codigo: "caja:ver",
+        modulo: "Caja y Pagos",
+        descripcion: "Permite consultar cobros, estado de deuda de pacientes y movimientos de caja por rango de fechas"
+    },
+    {
+        nombre: "Registrar Pagos",
+        codigo: "caja:cobrar",
+        modulo: "Caja y Pagos",
+        descripcion: "Permite generar cobros para citas realizadas y registrar pagos o abonos"
+    },
+    {
+        nombre: "Anular Cobros",
+        codigo: "caja:anular",
+        modulo: "Caja y Pagos",
+        descripcion: "Permite anular cobros en estado pendiente o pagado parcial"
     }
 ];
 
