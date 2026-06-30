@@ -18,10 +18,13 @@ import {
 	UserRoundPlus,
 	UserRound,
 	Weight,
+	Wallet,
+	ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
 import CalculosNutricionales from './CalculosNutricionales';
+import PanelMinuta from './PanelMinuta';
 
 const WEEKDAY_LABELS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const WEEKDAY_SHORT = ['LU', 'MA', 'MI', 'JU', 'VI', 'SA', 'DO'];
@@ -43,6 +46,11 @@ const INITIAL_CREATE_FORM = {
 	hora_fin: '',
 	observacion: '',
 };
+
+const formatCLP = (value) =>
+	new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(Number(value) || 0);
+
+const PREVISION_LABELS = { particular: 'Particular', fonasa: 'Fonasa', isapre: 'Isapre' };
 
 const formatDate = (date) =>
 	new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' }).format(date);
@@ -81,10 +89,12 @@ const Calendario = () => {
 	const [citas, setCitas] = useState([]);
 	const [pacientes, setPacientes] = useState([]);
 	const [nutricionistas, setNutricionistas] = useState([]);
+	const [servicios, setServicios] = useState([]);
 	const [slots, setSlots] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [pacientesLoading, setPacientesLoading] = useState(false);
 	const [nutricionistasLoading, setNutricionistasLoading] = useState(false);
+	const [serviciosLoading, setServiciosLoading] = useState(false);
 	const [slotsLoading, setSlotsLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [pacientesError, setPacientesError] = useState('');
@@ -129,9 +139,11 @@ const Calendario = () => {
 	const [panelCalculadoraOpen, setPanelCalculadoraOpen] = useState(false);
 	const [panelAlimentosOpen, setPanelAlimentosOpen] = useState(false);
 	const [atencionEvaluacion, setAtencionEvaluacion] = useState(null); // evaluación nutricional existente
+	const [minutaState, setMinutaState]               = useState(null); // minuta dietética de la atención
+	const [objetivoCalorico, setObjetivoCalorico]     = useState(null); // GET en kcal/día
 	const calculoDataRef = useRef(null); // datos en vivo de la calculadora (sin re-render)
 
-	const daysScrollRef = useRef(null);
+	const [dayGroupIndex, setDayGroupIndex] = useState(0);
 
 	const weekStart = useMemo(() => getWeekStart(weekAnchor), [weekAnchor]);
 
@@ -210,17 +222,34 @@ const Calendario = () => {
 		fetchCitas();
 	}, [weekDays]);
 
-	const fetchSlots = async (nutricionistaId, fecha) => {
+	const fetchSlots = async (nutricionistaId, fecha, duracionMinutos) => {
 		if (!nutricionistaId || !fecha) { setSlots([]); return; }
 		setSlotsLoading(true);
 		try {
-			const response = await fetch(apiUrl(`/public/disponibilidad/${nutricionistaId}?fecha=${fecha}`));
+			const duracionParam = duracionMinutos ? `&duracion=${duracionMinutos}` : '';
+			const response = await fetch(apiUrl(`/public/disponibilidad/${nutricionistaId}?fecha=${fecha}${duracionParam}`));
 			const data = await response.json();
 			setSlots(response.ok ? (data.data || []) : []);
 		} catch {
 			setSlots([]);
 		} finally {
 			setSlotsLoading(false);
+		}
+	};
+
+	const fetchServicios = async (nutricionistaId) => {
+		if (!nutricionistaId || !token) { setServicios([]); return; }
+		setServiciosLoading(true);
+		try {
+			const response = await fetch(apiUrl(`/servicios?id_user=${nutricionistaId}`), {
+				headers: { Authorization: `Bearer ${token}` },
+			});
+			const data = await response.json();
+			setServicios(response.ok ? (data.data || []) : []);
+		} catch {
+			setServicios([]);
+		} finally {
+			setServiciosLoading(false);
 		}
 	};
 
@@ -241,6 +270,7 @@ const Calendario = () => {
 		if (createOpen) {
 			fetchPacientes();
 			if (!isCurrentUserNutricionista) fetchNutricionistas();
+			else fetchServicios(currentUserId);
 		}
 	}, [createOpen, token]);
 
@@ -261,13 +291,15 @@ const Calendario = () => {
 	const weekLabel = `${formatDate(weekDays[0].date)} - ${formatDate(weekDays[6].date)}`;
 	const goToCurrentWeek = () => setWeekAnchor(new Date());
 
-	const scrollDays = (direction) => {
-		const container = daysScrollRef.current;
-		if (!container) return;
-
-		const distance = Math.max(container.clientWidth * 0.8, 320);
-		container.scrollBy({ left: direction * distance, behavior: 'smooth' });
-	};
+	// Auto-selecciona el grupo que contiene el día actual al cambiar de semana
+	useEffect(() => {
+		const todayIndex = weekDays.findIndex((d) => d.isToday);
+		if (todayIndex >= 0) {
+			setDayGroupIndex(todayIndex < 3 ? 0 : todayIndex < 6 ? 1 : 2);
+		} else {
+			setDayGroupIndex(0);
+		}
+	}, [weekStart]);
 
 	const getCitaStyle = (estado) => EVENT_STYLES[estado] || EVENT_STYLES.default;
 
@@ -290,9 +322,11 @@ const Calendario = () => {
 		});
 		setCreateError('');
 		setSlots([]);
+		setServicios([]);
 		setCreateOpen(true);
 		if (isCurrentUserNutricionista && currentUserId) {
-			fetchSlots(currentUserId, fecha);
+			const duracion = cita?.servicio?.duracion_minutos;
+			fetchSlots(currentUserId, fecha, duracion);
 		}
 	};
 
@@ -301,6 +335,7 @@ const Calendario = () => {
 		setCreateError('');
 		setCreateForm(INITIAL_CREATE_FORM);
 		setSlots([]);
+		setServicios([]);
 	};
 
 	const handleCreateChange = (field) => (e) => {
@@ -310,14 +345,24 @@ const Calendario = () => {
 	const handleFechaChange = (e) => {
 		const fecha = e.target.value;
 		const nutId = isCurrentUserNutricionista ? currentUserId : createForm.id_usuario;
+		const servicioSeleccionado = servicios.find((s) => String(s.id) === createForm.id_servicio);
 		setCreateForm((prev) => ({ ...prev, fecha, hora_inicio: '', hora_fin: '' }));
-		fetchSlots(nutId, fecha);
+		fetchSlots(nutId, fecha, servicioSeleccionado?.duracion_minutos);
 	};
 
 	const handleNutricionistaChange = (e) => {
 		const id_usuario = e.target.value;
-		setCreateForm((prev) => ({ ...prev, id_usuario, hora_inicio: '', hora_fin: '' }));
+		setCreateForm((prev) => ({ ...prev, id_usuario, id_servicio: '', hora_inicio: '', hora_fin: '' }));
+		fetchServicios(id_usuario);
 		fetchSlots(id_usuario, createForm.fecha);
+	};
+
+	const handleServicioChange = (e) => {
+		const id_servicio = e.target.value;
+		const servicioSeleccionado = servicios.find((s) => String(s.id) === id_servicio);
+		const nutId = isCurrentUserNutricionista ? currentUserId : createForm.id_usuario;
+		setCreateForm((prev) => ({ ...prev, id_servicio, hora_inicio: '', hora_fin: '' }));
+		fetchSlots(nutId, createForm.fecha, servicioSeleccionado?.duracion_minutos);
 	};
 
 	const handleSlotChange = (e) => {
@@ -400,6 +445,8 @@ const Calendario = () => {
 			edad: edadAuto,
 		});
 		setAtencionOpen(true);
+		setMinutaState(null);
+		setObjetivoCalorico(null);
 
 		// Intentar cargar ficha existente
 		setAtencionFetchLoading(true);
@@ -431,6 +478,8 @@ const Calendario = () => {
 					derivaciones:            f.derivaciones             ?? '',
 					observacion:             f.observacion              ?? '',
 				});
+				// Cargar minuta guardada
+				if (f.minuta) setMinutaState(f.minuta);
 
 				// Cargar evaluación nutricional existente (si hay y se tiene permiso)
 				try {
@@ -438,7 +487,10 @@ const Calendario = () => {
 						headers: { Authorization: `Bearer ${token}` },
 					});
 					const evData = await evRes.json();
-					if (evRes.ok && evData.data) setAtencionEvaluacion(evData.data);
+					if (evRes.ok && evData.data) {
+						setAtencionEvaluacion(evData.data);
+						if (evData.data.get) setObjetivoCalorico(Number(evData.data.get));
+					}
 				} catch { /* sin evaluación previa */ }
 			}
 		} catch { /* silencioso */ } finally {
@@ -456,6 +508,8 @@ const Calendario = () => {
 		setPanelCalculadoraOpen(false);
 		setPanelAlimentosOpen(false);
 		setAtencionEvaluacion(null);
+		setMinutaState(null);
+		setObjetivoCalorico(null);
 		calculoDataRef.current = null;
 	};
 
@@ -499,6 +553,9 @@ const Calendario = () => {
 			// Volcar diagnóstico y resumen generados por la calculadora hacia la ficha.
 			if (calc?.diagnostico) body.diagnostico_nutricional = calc.diagnostico;
 			if (calc?.resumen)     body.calculos                = calc.resumen;
+
+			// Incluir la minuta dietética (siempre, incluso si está vacía).
+			body.minuta = minutaState ?? null;
 
 			let res;
 			if (atencionFicha) {
@@ -595,6 +652,10 @@ const Calendario = () => {
 		}
 	};
 
+	const canEditAtencion = atencionCita
+		? (atencionCita.estado === 'completada' ? hasPermission('fichas:editar') : hasPermission('fichas:crear'))
+		: false;
+
 	return (
 		<div style={{ animation: 'slideIn 0.3s ease-out' }}>
 			<div className="action-bar" style={{ marginBottom: '28px', gap: '16px', flexWrap: 'wrap' }}>
@@ -646,46 +707,64 @@ const Calendario = () => {
 				</div>
 			)}
 
-			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '16px', marginBottom: '24px' }}>
-				{[
-					{ label: 'Citas de la semana', value: stats.total, tone: 'var(--morado-primario)' },
-					{ label: 'Confirmados', value: stats.confirmed, tone: 'var(--bienestar)' },
-					{ label: 'Pendientes', value: stats.pending, tone: 'var(--advertencia)' },
-				].map((item) => (
-					<div key={item.label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '18px 20px', boxShadow: 'var(--shadow-sm)' }}>
-						<div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '8px' }}>{item.label}</div>
-						<div style={{ fontSize: '28px', fontWeight: 800, color: item.tone, lineHeight: 1 }}>{item.value}</div>
-					</div>
-				))}
-			</div>
-
-			<div style={{ background: 'linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(250,250,250,0.98) 100%)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-md)', padding: '20px', marginBottom: '16px' }}>
-				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+			{/* Barra compacta: semana + stats + controles */}
+			<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '10px 16px', marginBottom: '16px', flexWrap: 'wrap', boxShadow: 'var(--shadow-sm)' }}>
+				{/* Izquierda: semana + pills de stats */}
+				<div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
 					<div>
-						<div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '4px' }}>Semana activa</div>
-						<div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)' }}>{weekLabel}</div>
+						<div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Semana activa</div>
+						<div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>{weekLabel}</div>
 					</div>
-					<div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--lavanda-suave)', padding: '10px 14px', borderRadius: '999px', color: 'var(--morado-primario)', fontSize: '13px', fontWeight: 700 }}>
-						<Clock3 size={16} />
-						Ordenado por hora y día
-					</div>
+					<div style={{ width: '1px', height: '28px', background: 'var(--border-color)' }} />
+					{[
+						{ label: 'Total', value: stats.total, tone: 'var(--morado-primario)' },
+						{ label: 'Confirmadas', value: stats.confirmed, tone: 'var(--bienestar)' },
+						{ label: 'Pendientes', value: stats.pending, tone: 'var(--advertencia)' },
+					].map((item) => (
+						<div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '999px', padding: '4px 12px' }}>
+							<span style={{ fontSize: '15px', fontWeight: 800, color: item.tone, lineHeight: 1 }}>{item.value}</span>
+							<span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 500 }}>{item.label}</span>
+						</div>
+					))}
 				</div>
-
-				<div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '14px', flexWrap: 'wrap' }}>
-					<button className="btn btn-secondary" type="button" onClick={() => scrollDays(-1)}>
-						<ChevronLeft size={18} />
-						Mover a la izquierda
-					</button>
-					<button className="btn btn-secondary" type="button" onClick={() => scrollDays(1)}>
-						Mover a la derecha
-						<ChevronRight size={18} />
-					</button>
+				{/* Derecha: tabs de días + badge */}
+				<div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'var(--lavanda-suave)', padding: '5px 12px', borderRadius: '999px', color: 'var(--morado-primario)', fontSize: '12px', fontWeight: 700 }}>
+						<Clock3 size={13} />
+						Por hora y día
+					</div>
+					<div style={{ display: 'flex', borderRadius: '8px', border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+						{[{ label: 'Lun – Mié', index: 0 }, { label: 'Jue – Sáb', index: 1 }, { label: 'Dom', index: 2 }].map(({ label, index }) => (
+							<button
+								key={index}
+								type="button"
+								onClick={() => setDayGroupIndex(index)}
+								style={{
+									padding: '5px 13px',
+									fontSize: '12px',
+									fontWeight: dayGroupIndex === index ? 700 : 500,
+									background: dayGroupIndex === index ? 'var(--morado-primario)' : 'var(--bg-card)',
+									color: dayGroupIndex === index ? 'white' : 'var(--text-secondary)',
+									border: 'none',
+									borderRight: index < 2 ? '1px solid var(--border-color)' : 'none',
+									cursor: 'pointer',
+									transition: 'all 0.15s',
+									whiteSpace: 'nowrap',
+								}}
+							>
+								{label}
+							</button>
+						))}
+					</div>
 				</div>
 			</div>
 
-			<div ref={daysScrollRef} style={{ overflowX: 'auto', paddingBottom: '8px' }}>
-				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(230px, 1fr))', gap: '14px', minWidth: 'max-content' }}>
+			<div>
+				<div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayGroupIndex === 2 ? 1 : 3}, 1fr)`, gap: '14px' }}>
 					{weekDays.map((day, index) => {
+						const groupStart = dayGroupIndex * 3;
+						const groupEnd = dayGroupIndex === 2 ? 7 : groupStart + 3;
+						if (index < groupStart || index >= groupEnd) return null;
 						const dayEvents = eventsByDay[index];
 
 						return (
@@ -696,7 +775,7 @@ const Calendario = () => {
 									border: `1px solid ${day.isToday ? 'var(--morado-secundario)' : 'var(--border-color)'}`,
 									borderRadius: 'var(--radius-md)',
 									boxShadow: day.isToday ? 'var(--shadow-glow)' : 'var(--shadow-sm)',
-									minHeight: '560px',
+									height: '560px',
 									display: 'flex',
 									flexDirection: 'column',
 									overflow: 'hidden',
@@ -715,7 +794,7 @@ const Calendario = () => {
 									<div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{formatDate(day.date)}</div>
 								</header>
 
-								<div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px', flexGrow: 1 }}>
+								<div style={{ padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px', flexGrow: 1, overflowY: 'auto' }}>
 									{loading ? (
 										<div style={{ flexGrow: 1, border: '1px dashed var(--border-color)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', color: 'var(--text-muted)', textAlign: 'center', minHeight: '180px' }}>
 											<div>
@@ -737,57 +816,47 @@ const Calendario = () => {
 											const style = getCitaStyle(cita.estado);
 											const StatusIcon = style.icon;
 											const patientName = getFullName(cita.paciente) || 'Paciente no disponible';
-											const nutritionistName = getFullName(cita.nutricionista ?? cita.usuario) || 'Nutricionista';
 											const serviceName = cita.servicio?.nombre || cita.origen || 'Consulta';
-											const note = cita.observacion || 'Sin observaciones registradas.';
 
 											return (
 												<article
 													key={cita.id_cita}
 													style={{
-														borderRadius: '16px',
+														borderRadius: '10px',
 														border: '1px solid rgba(0,0,0,0.05)',
 														background: style.background,
-														borderLeft: `5px solid ${style.accent}`,
-														padding: '14px',
+														borderLeft: `4px solid ${style.accent}`,
+														padding: '10px 12px',
 														display: 'flex',
 														flexDirection: 'column',
-														gap: '10px',
+														gap: '6px',
 													}}
 												>
-													<div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-														<div>
-															<div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '3px' }}>{serviceName}</div>
-															<div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{nutritionistName}</div>
+													{/* Fila 1: hora + badge de estado */}
+													<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+														<div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 700, color: style.accent }}>
+															<Clock3 size={13} />
+															{cita.hora_inicio.substring(0, 5)} – {cita.hora_fin.substring(0, 5)}
 														</div>
-														<div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 700, color: style.text, background: 'rgba(255,255,255,0.6)', borderRadius: '999px', padding: '6px 10px', whiteSpace: 'nowrap' }}>
-															<StatusIcon size={14} />
+														<div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '11px', fontWeight: 700, color: style.text, background: 'rgba(255,255,255,0.65)', borderRadius: '999px', padding: '3px 8px', whiteSpace: 'nowrap' }}>
+															<StatusIcon size={11} />
 															{style.label}
 														</div>
 													</div>
 
-													<div style={{ display: 'grid', gap: '8px' }}>
-														<div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-															<Clock3 size={15} style={{ color: style.accent }} />
-															{cita.hora_inicio.substring(0, 5)} - {cita.hora_fin.substring(0, 5)}
-														</div>
-														<div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-															<UserRound size={15} style={{ color: style.accent }} />
-															{patientName}
-														</div>
-														<div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-															<MapPin size={15} style={{ color: style.accent }} />
-															{serviceName}
-														</div>
+													{/* Fila 2: nombre del paciente */}
+													<div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>
+														<UserRound size={13} style={{ color: style.accent, flexShrink: 0 }} />
+														<span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{patientName}</span>
 													</div>
 
-													<p style={{ fontSize: '13px', color: 'var(--text-primary)', lineHeight: 1.45 }}>
-														{note}
-													</p>
+													{/* Fila 3: nombre del servicio */}
+													<div style={{ fontSize: '12px', color: 'var(--text-secondary)', paddingLeft: '19px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+														{serviceName}
+													</div>
 
-													{/* ── Acciones de la tarjeta ── */}
-													<div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-														{/* Iniciar atención: requiere fichas:crear (cita pendiente) o fichas:editar (ya completada) */}
+													{/* Botones de acción */}
+													<div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
 														{cita.estado !== 'cancelada' && (
 															(cita.estado === 'completada'
 																? hasPermission('fichas:editar')
@@ -797,22 +866,21 @@ const Calendario = () => {
 																	type="button"
 																	onClick={() => openAtencionModal(cita)}
 																	style={{
-																		alignSelf: 'flex-start',
 																		display: 'inline-flex',
 																		alignItems: 'center',
-																		gap: '5px',
-																		fontSize: '12px',
+																		gap: '4px',
+																		fontSize: '11px',
 																		fontWeight: 600,
 																		color: cita.estado === 'completada' ? '#0F766E' : '#6D28D9',
 																		background: cita.estado === 'completada' ? 'rgba(20,184,166,0.10)' : 'rgba(109,40,217,0.08)',
 																		border: cita.estado === 'completada' ? '1px solid rgba(20,184,166,0.25)' : '1px solid rgba(109,40,217,0.20)',
-																		borderRadius: '8px',
-																		padding: '5px 10px',
+																		borderRadius: '6px',
+																		padding: '4px 8px',
 																		cursor: 'pointer',
 																		transition: 'all 0.15s',
 																	}}
 																>
-																	<ClipboardPlus size={13} />
+																	<ClipboardPlus size={11} />
 																	{cita.estado === 'completada' ? 'Ver atención' : 'Iniciar atención'}
 																</button>
 															)
@@ -821,10 +889,10 @@ const Calendario = () => {
 															<button
 																type="button"
 																onClick={() => openCancelModal(cita)}
-																style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 600, color: '#B91C1C', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', padding: '5px 10px', cursor: 'pointer' }}
+																style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 600, color: '#B91C1C', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', padding: '4px 8px', cursor: 'pointer' }}
 															>
-																<Ban size={13} />
-																Cancelar cita
+																<Ban size={11} />
+																Cancelar
 															</button>
 														)}
 													</div>
@@ -884,6 +952,23 @@ const Calendario = () => {
 												{nutricionistasLoading && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>Cargando nutricionistas...</div>}
 											</div>
 										)}
+								</div>
+								<div className="form-group">
+									<label className="form-label">Servicio</label>
+									<select
+										className="form-input"
+										value={createForm.id_servicio}
+										onChange={handleServicioChange}
+										disabled={!(isCurrentUserNutricionista ? currentUserId : createForm.id_usuario)}
+									>
+										<option value="">Sin servicio asociado</option>
+										{servicios.map((s) => (
+											<option key={s.id} value={s.id}>
+												{s.nombre} · {s.duracion_minutos} min · {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 }).format(s.precio)} ({s.prevision})
+											</option>
+										))}
+									</select>
+									{serviciosLoading && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>Cargando servicios...</div>}
 								</div>
 								<div className="form-group">
 									<label className="form-label">Horario disponible</label>
@@ -1153,7 +1238,11 @@ const Calendario = () => {
 													initial={atencionEvaluacion}
 													token={token}
 													canGestionar={hasPermission('calculos:gestionar')}
-													onChange={(d) => { calculoDataRef.current = d; }}
+													onChange={(d) => {
+										calculoDataRef.current = d;
+										const get = d?.ev?.energetico?.get ?? null;
+										setObjetivoCalorico(get ? Number(get) : null);
+									}}
 												/>
 											) : (
 												<div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
@@ -1177,13 +1266,13 @@ const Calendario = () => {
 											<ChevronDown size={16} color="#15803D" style={{ transition: 'transform 0.2s', transform: panelAlimentosOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
 										</button>
 										{panelAlimentosOpen && (
-											<div style={{ padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: 'var(--bg-card)' }}>
-												<Apple size={32} color="#15803D" style={{ opacity: 0.25 }} />
-												<p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: 0, lineHeight: 1.5 }}>
-													<strong style={{ display: 'block', marginBottom: '4px', color: 'var(--text-secondary)' }}>Próximamente</strong>
-													Búsqueda de alimentos con valores nutricionales<br />(calorías, proteínas, carbohidratos, grasas, etc.)
-												</p>
-											</div>
+											<PanelMinuta
+												value={minutaState}
+												onChange={setMinutaState}
+												objetivoCalorico={objetivoCalorico}
+												token={token}
+												disabled={!canEditAtencion}
+											/>
 										)}
 									</div>
 

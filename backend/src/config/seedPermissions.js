@@ -156,6 +156,32 @@ const SEED_PERMISSIONS = [
         descripcion: "Permite crear, editar y eliminar bloques de disponibilidad horaria"
     },
 
+    // ─────────────── Módulo: Servicios ───────────────
+    {
+        nombre: "Ver Pestaña de Servicios",
+        codigo: "servicios:ver",
+        modulo: "Servicios",
+        descripcion: "Permite ver la pestaña de servicios y listar los servicios definidos por los profesionales"
+    },
+    {
+        nombre: "Crear Servicios",
+        codigo: "servicios:crear",
+        modulo: "Servicios",
+        descripcion: "Permite definir nuevos servicios con su valor, duración y previsión asociada"
+    },
+    {
+        nombre: "Editar Servicios",
+        codigo: "servicios:editar",
+        modulo: "Servicios",
+        descripcion: "Permite editar servicios existentes"
+    },
+    {
+        nombre: "Eliminar Servicios",
+        codigo: "servicios:eliminar",
+        modulo: "Servicios",
+        descripcion: "Permite eliminar (desactivar) servicios del sistema"
+    },
+
     // ─────────────── Módulo: Calendario ───────────────}
     {
         nombre: "Ver Calendario",
@@ -175,6 +201,26 @@ const SEED_PERMISSIONS = [
         codigo: "calculos:gestionar",
         modulo: "Cálculos Nutricionales",
         descripcion: "Permite guardar y actualizar la evaluación nutricional (mediciones y resultados) de una atención"
+    },
+
+    // ─────────────── Módulo: Caja y Pagos ───────────────
+    {
+        nombre: "Ver Caja",
+        codigo: "caja:ver",
+        modulo: "Caja y Pagos",
+        descripcion: "Permite consultar cobros, estado de deuda de pacientes y movimientos de caja por rango de fechas"
+    },
+    {
+        nombre: "Registrar Pagos",
+        codigo: "caja:cobrar",
+        modulo: "Caja y Pagos",
+        descripcion: "Permite generar cobros para citas realizadas y registrar pagos o abonos"
+    },
+    {
+        nombre: "Anular Cobros",
+        codigo: "caja:anular",
+        modulo: "Caja y Pagos",
+        descripcion: "Permite anular cobros en estado pendiente o pagado parcial"
     }
 ];
 

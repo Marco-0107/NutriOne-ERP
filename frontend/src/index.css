@@ -293,13 +293,15 @@ textarea.form-input {
 /* App Layout */
 .app-container {
   display: flex;
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background-color: var(--bg-primary);
 }
 
 /* Sidebar Styling */
 .sidebar {
   width: 280px;
+  height: 100%;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
@@ -432,6 +434,7 @@ textarea.form-input {
 /* Main Content Area */
 .main-wrapper {
   flex-grow: 1;
+  height: 100%;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -1460,3 +1463,13 @@ textarea.form-input {
   gap: 12px;
 }
 .bn-empty-icono { font-size: 48px; line-height: 1; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

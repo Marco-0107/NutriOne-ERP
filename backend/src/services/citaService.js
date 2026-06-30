@@ -1,5 +1,6 @@
 const { AppDataSource } = require("../config/configDb");
-const { calcularDuracionMinutos } = require("../utils/citaUtils");
+const { calcularDuracionMinutos, sumarMinutosAHora } = require("../utils/citaUtils");
+const { generarCobro } = require("./cajaService");
 
 const formatCita = (cita) => ({
     id_cita:             cita.id_cita,
@@ -33,6 +34,15 @@ const formatCita = (cita) => ({
             id:               cita.servicio.id,
             nombre:           cita.servicio.nombre,
             duracion_minutos: cita.servicio.duracion_minutos,
+            precio:           cita.servicio.precio,
+            prevision:        cita.servicio.prevision,
+        }
+        : null,
+    pago: cita.transacciones?.[0]
+        ? {
+            id_transaccion: cita.transacciones[0].id_transaccion,
+            monto:          cita.transacciones[0].monto,
+            estado_pago:    cita.transacciones[0].estado_pago,
         }
         : null,
     fecha_creacion:      cita.fecha_creacion,
@@ -46,6 +56,7 @@ const getCitaConRelaciones = (citaId) =>
         .leftJoinAndSelect("paciente.usuario", "pacienteUsuario")
         .leftJoinAndSelect("cita.usuario", "usuario")
         .leftJoinAndSelect("cita.servicio", "servicio")
+        .leftJoinAndSelect("cita.transacciones", "transacciones")
         .where("cita.id_cita = :id", { id: citaId })
         .getOne();
 
@@ -78,7 +89,8 @@ const getCitasService = async (filtros = {}) => {
         .leftJoinAndSelect("cita.paciente", "paciente")
         .leftJoinAndSelect("paciente.usuario", "pacienteUsuario")
         .leftJoinAndSelect("cita.usuario", "usuario")
-        .leftJoinAndSelect("cita.servicio", "servicio");
+        .leftJoinAndSelect("cita.servicio", "servicio")
+        .leftJoinAndSelect("cita.transacciones", "transacciones");
 
     if (filtros.estado)      qb.andWhere("cita.estado = :estado",      { estado:      filtros.estado });
     if (filtros.id_usuario)  qb.andWhere("usuario.id = :id_usuario",   { id_usuario:  Number(filtros.id_usuario) });
@@ -106,6 +118,14 @@ const createCitaService = async ({ id_paciente, id_usuario, id_servicio, fecha, 
     const nutricionista = await AppDataSource.getRepository("Usuario").findOneBy({ id: id_usuario });
     if (!nutricionista) throw { status: 404, message: "Nutricionista no encontrado" };
 
+    let servicio = null;
+    if (id_servicio) {
+        servicio = await AppDataSource.getRepository("Servicio").findOneBy({ id: id_servicio });
+        if (!servicio) throw { status: 404, message: "Servicio no encontrado" };
+        // La duración del servicio puede ser distinta a la del slot de disponibilidad: manda el servicio.
+        hora_fin = sumarMinutosAHora(hora_inicio, servicio.duracion_minutos);
+    }
+
     if (hora_fin <= hora_inicio) {
         throw { status: 400, message: "La hora de fin debe ser posterior a la hora de inicio" };
     }
@@ -120,16 +140,14 @@ const createCitaService = async ({ id_paciente, id_usuario, id_servicio, fecha, 
         hora_fin,
         observacion: observacion ?? null,
         origen:      "interna",
+        servicio:    servicio ?? undefined,
     };
-
-    if (id_servicio) {
-        const servicio = await AppDataSource.getRepository("Servicio").findOneBy({ id: id_servicio });
-        if (!servicio) throw { status: 404, message: "Servicio no encontrado" };
-        citaData.servicio = servicio;
-    }
 
     const citaRepo = AppDataSource.getRepository("Cita");
     const saved    = await citaRepo.save(citaRepo.create(citaData));
+
+    // El cobro se genera al marcar la cita como 'realizada' (ver updateCitaService).
+
     return formatCita(await getCitaConRelaciones(saved.id_cita));
 };
 
@@ -152,10 +170,15 @@ const updateCitaService = async (citaId, datos) => {
         cita.usuario = nutricionista;
     }
 
+    let servicio;
     if (id_servicio !== undefined) {
-        const servicio = await AppDataSource.getRepository("Servicio").findOneBy({ id: id_servicio });
-        if (!servicio) throw { status: 404, message: "Servicio no encontrado" };
-        cita.servicio = servicio;
+        if (id_servicio === null) {
+            cita.servicio = null;
+        } else {
+            servicio = await AppDataSource.getRepository("Servicio").findOneBy({ id: id_servicio });
+            if (!servicio) throw { status: 404, message: "Servicio no encontrado" };
+            cita.servicio = servicio;
+        }
     }
 
     if (fecha              !== undefined) cita.fecha              = fecha;
@@ -165,16 +188,41 @@ const updateCitaService = async (citaId, datos) => {
     if (motivo_cancelacion !== undefined) cita.motivo_cancelacion = motivo_cancelacion;
     if (observacion        !== undefined) cita.observacion        = observacion;
 
+    // La duración del servicio puede ser distinta a la del slot: manda el servicio si se asignó/cambió uno.
+    if (servicio) {
+        cita.hora_fin = sumarMinutosAHora(cita.hora_inicio.substring(0, 5), servicio.duracion_minutos);
+    }
+
     const hi = cita.hora_inicio.substring(0, 5);
     const hf = cita.hora_fin.substring(0, 5);
     if (hf <= hi) throw { status: 400, message: "La hora de fin debe ser posterior a la hora de inicio" };
 
-    if (fecha !== undefined || hora_inicio !== undefined || hora_fin !== undefined || id_usuario !== undefined) {
+    if (fecha !== undefined || hora_inicio !== undefined || hora_fin !== undefined || id_usuario !== undefined || servicio) {
         await verificarSinConflicto(cita.usuario.id, cita.fecha, hi, hf, citaId);
     }
 
-    const updated = await AppDataSource.getRepository("Cita").save(cita);
-    return formatCita(updated);
+    const marcandoCompletada = estado === "completada" && cita.estado !== "completada";
+
+    if (marcandoCompletada) {
+        // Atómico: la cita pasa a 'completada' y se genera el cobro en la misma transacción.
+        const queryRunner = AppDataSource.createQueryRunner();
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        try {
+            await queryRunner.manager.save("Cita", cita);
+            await generarCobro(citaId, queryRunner);
+            await queryRunner.commitTransaction();
+        } catch (err) {
+            await queryRunner.rollbackTransaction();
+            throw err;
+        } finally {
+            await queryRunner.release();
+        }
+    } else {
+        await AppDataSource.getRepository("Cita").save(cita);
+    }
+
+    return formatCita(await getCitaConRelaciones(citaId));
 };
 
 const cancelarCitaService = async (citaId, motivo_cancelacion) => {

@@ -24,8 +24,12 @@ const createCitaSchema = Joi.object({
         }),
     hora_inicio: Joi.string().pattern(HORA_PATTERN).required()
         .messages({ ...HORA_MESSAGES, "any.required": "La hora de inicio es requerida" }),
-    hora_fin: Joi.string().pattern(HORA_PATTERN).required()
-        .messages({ ...HORA_MESSAGES, "any.required": "La hora de fin es requerida" }),
+    // Si se indica id_servicio, la hora de fin se recalcula según la duración del servicio.
+    hora_fin: Joi.string().pattern(HORA_PATTERN).when("id_servicio", {
+        is: Joi.exist().not(null),
+        then: Joi.optional(),
+        otherwise: Joi.required(),
+    }).messages({ ...HORA_MESSAGES, "any.required": "La hora de fin es requerida" }),
     observacion: Joi.string().max(1000).allow("", null).optional()
         .messages({ "string.max": "La observación no puede superar los 1000 caracteres" }),
 });
@@ -137,10 +141,15 @@ const citaPublicaSchema = Joi.object({
         ...HORA_MESSAGES,
         "any.required": "La hora de inicio es requerida",
     }),
-    hora_fin: Joi.string().pattern(HORA_PATTERN).required().messages({
+    hora_fin: Joi.string().pattern(HORA_PATTERN).when("id_servicio", {
+        is: Joi.exist().not(null),
+        then: Joi.optional(),
+        otherwise: Joi.required(),
+    }).messages({
         ...HORA_MESSAGES,
         "any.required": "La hora de fin es requerida",
     }),
+    id_servicio: Joi.number().integer().positive().allow(null).optional(),
     observacion: Joi.string().max(1000).allow("", null).optional().messages({
         "string.max": "La observación no puede superar los 1000 caracteres",
     }),

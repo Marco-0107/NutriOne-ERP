@@ -19,6 +19,11 @@ module.exports = new EntitySchema({
             length: 100,
             nullable: true,
         },
+        telefono: {
+            type: "varchar",
+            length: 20,
+            nullable: true,
+        },
     },
     relations: {
         usuario: {
