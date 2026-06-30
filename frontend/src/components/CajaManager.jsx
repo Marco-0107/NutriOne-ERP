@@ -3,9 +3,11 @@ import { useAuth } from '../context/AuthContext';
 import {
     Wallet, ReceiptText, TrendingUp, ChevronDown, ChevronUp,
     CircleDollarSign, AlertCircle, CheckCircle2, X, Plus,
-    Clock, Ban, CreditCard, Banknote, ArrowLeftRight, BookCheck
+    Clock, Ban, CreditCard, Banknote, ArrowLeftRight, BookCheck,
+    Printer, Loader
 } from 'lucide-react';
 import { apiUrl } from '../helpers/api';
+import { generarReciboHTML, fetchCobroConCita } from '../helpers/reportes';
 
 /* ─── utilidades ─────────────────────────────────────────────────── */
 const formatCLP = (v) =>
@@ -183,9 +185,10 @@ const ModalPago = ({ cobro, token, onClose, onSuccess }) => {
 
 /* ─── Fila de cobro expandible ──────────────────────────────────── */
 const FilaCobro = ({ cobro: cobroInicial, token, hasPermission, onAnular }) => {
-    const [cobro, setCobro]       = useState(cobroInicial);
-    const [expanded, setExpanded] = useState(false);
+    const [cobro, setCobro]         = useState(cobroInicial);
+    const [expanded, setExpanded]   = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [loadingRecibo, setLoadingRecibo] = useState(false);
 
     const handlePagoExitoso = (cobroActualizado) => {
         setCobro(prev => ({
@@ -197,6 +200,19 @@ const FilaCobro = ({ cobro: cobroInicial, token, hasPermission, onAnular }) => {
         }));
         setShowModal(false);
         setExpanded(true);
+    };
+
+    const handleImprimirRecibo = async (e) => {
+        e.stopPropagation();
+        setLoadingRecibo(true);
+        try {
+            const { cobro: cobroFull, cita } = await fetchCobroConCita(cobro.id_cobro, token);
+            const html = generarReciboHTML(cobroFull, cita);
+            const w = window.open('', '_blank', 'width=560,height=820');
+            w.document.write(html); w.document.close();
+        } catch (err) {
+            alert(`Error al generar recibo: ${err.message}`);
+        } finally { setLoadingRecibo(false); }
     };
 
     const porcentaje = cobro.monto_total > 0
@@ -296,6 +312,15 @@ const FilaCobro = ({ cobro: cobroInicial, token, hasPermission, onAnular }) => {
                                     onClick={(e) => { e.stopPropagation(); setShowModal(true); }}
                                     style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: 'none', background: 'var(--accent-gradient)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
                                     <Plus size={14} /> Registrar pago
+                                </button>
+                            )}
+                            {(cobro.estado === 'pagado' || cobro.estado === 'pagado_parcial') && (
+                                <button
+                                    onClick={handleImprimirRecibo}
+                                    disabled={loadingRecibo}
+                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1.5px solid #F59E0B', background: 'transparent', color: '#D97706', fontWeight: 600, fontSize: '13px', cursor: loadingRecibo ? 'wait' : 'pointer', opacity: loadingRecibo ? 0.6 : 1 }}>
+                                    {loadingRecibo ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Printer size={14} />}
+                                    Imprimir recibo
                                 </button>
                             )}
                             {hasPermission('caja:anular') && cobro.estado !== 'pagado' && cobro.estado !== 'anulado' && (
