@@ -4,10 +4,10 @@ import {
     Wallet, ReceiptText, TrendingUp, ChevronDown, ChevronUp,
     CircleDollarSign, AlertCircle, CheckCircle2, X, Plus,
     Clock, Ban, CreditCard, Banknote, ArrowLeftRight, BookCheck,
-    Printer, FileText, Loader
+    Printer, Loader
 } from 'lucide-react';
 import { apiUrl } from '../helpers/api';
-import { generarReciboHTML, generarPDFSesion, fetchCitaCompleta, fetchCobroConCita } from '../helpers/reportes';
+import { generarReciboHTML, fetchCobroConCita } from '../helpers/reportes';
 
 /* ─── utilidades ─────────────────────────────────────────────────── */
 const formatCLP = (v) =>
@@ -189,7 +189,6 @@ const FilaCobro = ({ cobro: cobroInicial, token, hasPermission, onAnular }) => {
     const [expanded, setExpanded]   = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [loadingRecibo, setLoadingRecibo] = useState(false);
-    const [loadingPDF,    setLoadingPDF]    = useState(false);
 
     const handlePagoExitoso = (cobroActualizado) => {
         setCobro(prev => ({
@@ -214,18 +213,6 @@ const FilaCobro = ({ cobro: cobroInicial, token, hasPermission, onAnular }) => {
         } catch (err) {
             alert(`Error al generar recibo: ${err.message}`);
         } finally { setLoadingRecibo(false); }
-    };
-
-    const handlePDFSesion = async (e) => {
-        e.stopPropagation();
-        if (!cobro.cita?.id_cita) return alert('Esta cita no tiene un ID de cita asociado.');
-        setLoadingPDF(true);
-        try {
-            const { cita, ficha, evaluacion } = await fetchCitaCompleta(cobro.cita.id_cita, token);
-            generarPDFSesion(cita, ficha, evaluacion);
-        } catch (err) {
-            alert(`Error al generar PDF: ${err.message}`);
-        } finally { setLoadingPDF(false); }
     };
 
     const porcentaje = cobro.monto_total > 0
@@ -334,15 +321,6 @@ const FilaCobro = ({ cobro: cobroInicial, token, hasPermission, onAnular }) => {
                                     style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1.5px solid #F59E0B', background: 'transparent', color: '#D97706', fontWeight: 600, fontSize: '13px', cursor: loadingRecibo ? 'wait' : 'pointer', opacity: loadingRecibo ? 0.6 : 1 }}>
                                     {loadingRecibo ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Printer size={14} />}
                                     Imprimir recibo
-                                </button>
-                            )}
-                            {cobro.cita?.id_cita && (
-                                <button
-                                    onClick={handlePDFSesion}
-                                    disabled={loadingPDF}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: 'var(--radius-sm)', border: '1.5px solid #3B82F6', background: 'transparent', color: '#2563EB', fontWeight: 600, fontSize: '13px', cursor: loadingPDF ? 'wait' : 'pointer', opacity: loadingPDF ? 0.6 : 1 }}>
-                                    {loadingPDF ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <FileText size={14} />}
-                                    PDF sesión
                                 </button>
                             )}
                             {hasPermission('caja:anular') && cobro.estado !== 'pagado' && cobro.estado !== 'anulado' && (
