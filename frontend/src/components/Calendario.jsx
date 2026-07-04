@@ -20,9 +20,12 @@ import {
 	Weight,
 	Wallet,
 	ShieldCheck,
+	FileText,
+	Loader,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
+import { generarPDFSesion, fetchCitaCompleta } from '../helpers/reportes';
 import CalculosNutricionales from './CalculosNutricionales';
 import PanelMinuta from './PanelMinuta';
 
@@ -142,6 +145,7 @@ const Calendario = () => {
 	const [minutaState, setMinutaState]               = useState(null); // minuta dietética de la atención
 	const [objetivoCalorico, setObjetivoCalorico]     = useState(null); // GET en kcal/día
 	const calculoDataRef = useRef(null); // datos en vivo de la calculadora (sin re-render)
+	const [pdfLoadingCitaId, setPdfLoadingCitaId] = useState(null);
 
 	const [dayGroupIndex, setDayGroupIndex] = useState(0);
 
@@ -428,6 +432,17 @@ const Calendario = () => {
 		const cumpleEsteAnio = new Date(hoy.getFullYear(), nac.getMonth(), nac.getDate());
 		if (hoy < cumpleEsteAnio) edad--;
 		return edad >= 0 ? edad : '';
+	};
+
+	const handlePDFSesion = async (cita) => {
+		if (cita.estado !== 'completada') return;
+		setPdfLoadingCitaId(cita.id_cita);
+		try {
+			const { cita: citaFull, ficha, evaluacion } = await fetchCitaCompleta(cita.id_cita, token);
+			generarPDFSesion(citaFull, ficha, evaluacion);
+		} catch (err) {
+			alert(`Error al generar PDF: ${err.message}`);
+		} finally { setPdfLoadingCitaId(null); }
 	};
 
 	const openAtencionModal = async (cita) => {
@@ -884,6 +899,29 @@ const Calendario = () => {
 																	{cita.estado === 'completada' ? 'Ver atención' : 'Iniciar atención'}
 																</button>
 															)
+														)}
+														{cita.estado === 'completada' && (
+															<button
+																type="button"
+																onClick={() => handlePDFSesion(cita)}
+																disabled={pdfLoadingCitaId === cita.id_cita}
+																style={{
+																	display: 'inline-flex', alignItems: 'center', gap: '4px',
+																	fontSize: '11px', fontWeight: 600,
+																	color: '#2563EB',
+																	background: 'rgba(59,130,246,0.08)',
+																	border: '1px solid rgba(59,130,246,0.22)',
+																	borderRadius: '6px', padding: '4px 8px',
+																	cursor: pdfLoadingCitaId === cita.id_cita ? 'wait' : 'pointer',
+																	opacity: pdfLoadingCitaId === cita.id_cita ? 0.6 : 1,
+																}}
+															>
+																{pdfLoadingCitaId === cita.id_cita
+																	? <Loader size={11} style={{ animation: 'spin 1s linear infinite' }} />
+																	: <FileText size={11} />
+																}
+																PDF sesión
+															</button>
 														)}
 														{hasPermission('citas:cancelar') && cita.estado !== 'cancelada' && (
 															<button
