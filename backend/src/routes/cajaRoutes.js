@@ -9,6 +9,7 @@ const {
     registrarPagoController,
     getResumenPacienteController,
     getMovimientosCajaController,
+    getResumenCajaController,
     anularCobroController,
 } = require("../controllers/cajaController");
 
@@ -21,6 +22,7 @@ router.get(    "/cobros/:id",          authMiddleware, permissionMiddleware("caj
 router.post(   "/cobros/:id/pagos",    authMiddleware, permissionMiddleware("caja:cobrar"), registrarPagoController);
 router.patch(  "/cobros/:id/anular",   authMiddleware, permissionMiddleware("caja:anular"), anularCobroController);
 router.get(    "/paciente/:id_paciente", authMiddleware, permissionMiddleware("caja:ver"), getResumenPacienteController);
+router.get(    "/resumen",             authMiddleware, permissionMiddleware("caja:ver"),    getResumenCajaController);
 router.get(    "/movimientos",         authMiddleware, permissionMiddleware("caja:ver"),    getMovimientosCajaController);
 
 module.exports = router;

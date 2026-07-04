@@ -12,6 +12,7 @@ const {
     getCobros,
     getResumenPaciente,
     getMovimientosCaja,
+    getResumenCaja,
     anularCobro,
 } = require("../services/cajaService");
 
@@ -121,6 +122,16 @@ const anularCobroController = async (req, res) => {
     }
 };
 
+const getResumenCajaController = async (req, res) => {
+    try {
+        const data = await getResumenCaja({ nutricionistaId: req.user.id });
+        return res.json({ success: true, data });
+    } catch (err) {
+        if (err.status) return res.status(err.status).json({ success: false, message: err.message });
+        return serverError(res, err, "cajaController.getResumenCaja");
+    }
+};
+
 module.exports = {
     generarCobroController,
     getCobrosController,
@@ -128,5 +139,6 @@ module.exports = {
     registrarPagoController,
     getResumenPacienteController,
     getMovimientosCajaController,
+    getResumenCajaController,
     anularCobroController,
 };
