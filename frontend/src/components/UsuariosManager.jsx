@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Plus, Edit2, Trash2, X, UserCog, AlertCircle, CheckCircle2, Search, Shield } from 'lucide-react';
+import { validarRut, validarEmail } from '../helpers/validaciones';
 
 const ROL_COLORS = [
     { bg: 'rgba(139,92,246,0.12)', color: '#7c3aed' },
@@ -179,6 +180,13 @@ const UsuariosManager = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormError('');
+
+        if (!validarRut(formData.rut)) return setFormError('El RUT ingresado no es válido.');
+        if (!validarEmail(formData.correo)) return setFormError('El correo electrónico no tiene un formato válido.');
+        if (!editingUsuario && formData.contrasena.length < 6) {
+            return setFormError('La contraseña debe tener al menos 6 caracteres.');
+        }
+
         setFormLoading(true);
 
         const url    = editingUsuario
@@ -640,6 +648,7 @@ const UsuariosManager = () => {
                                             placeholder="Mínimo 6 caracteres"
                                             value={formData.contrasena}
                                             onChange={handleChange('contrasena')}
+                                            minLength={6}
                                             required
                                         />
                                     </div>

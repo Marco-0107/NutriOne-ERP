@@ -8,6 +8,7 @@ import {
     ChevronLeft, MapPin, MoreVertical, TrendingUp,
 } from 'lucide-react';
 import { apiUrl } from '../helpers/api';
+import { validarRut, validarTelefono, validarFechaNacimiento, validarFechaNoFutura } from '../helpers/validaciones';
 import PanelMinuta from './PanelMinuta';
 
 const EMPTY_FORM = {
@@ -123,6 +124,7 @@ const ModalAtencion = ({ cita, token, onClose }) => {
         setAtencionError('');
         if (!atencionForm.tipo.trim())        return setAtencionError('El tipo de atención es requerido.');
         if (!atencionForm.fecha_atencion)      return setAtencionError('La fecha de atención es requerida.');
+        if (!validarFechaNoFutura(atencionForm.fecha_atencion)) return setAtencionError('La fecha de atención no puede ser futura.');
         if (!String(atencionForm.edad).trim()) return setAtencionError('La edad del paciente es requerida.');
 
         setAtencionLoading(true);
@@ -754,6 +756,13 @@ const PacientesManager = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormError('');
+
+        if (!validarRut(formData.rut)) return setFormError('El RUT ingresado no es válido.');
+        if (!validarFechaNacimiento(formData.fecha_nacimiento)) return setFormError('La fecha de nacimiento no es válida.');
+        if (formData.telefono?.trim() && !validarTelefono(formData.telefono)) {
+            return setFormError('El teléfono no tiene un formato válido (ej: +56912345678).');
+        }
+
         setFormLoading(true);
 
         const url    = editingPaciente
