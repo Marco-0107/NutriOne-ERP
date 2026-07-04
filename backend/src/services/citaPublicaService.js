@@ -3,6 +3,7 @@ const { Between, Not, In } = require("typeorm");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const { sumarMinutosAHora } = require("../utils/citaUtils");
+const { emitCitaEvent } = require("../websocket");
 
 /**
  * Get all active nutricionistas.
@@ -359,6 +360,12 @@ const agendarCitaPublicaService = async (data) => {
         }
 
         await queryRunner.commitTransaction();
+
+        emitCitaEvent("cita:actualizada", {
+            id_cita:    savedCita.id_cita,
+            fecha:      savedCita.fecha,
+            id_usuario: nutricionista.id,
+        });
 
         return {
             id_cita: savedCita.id_cita,

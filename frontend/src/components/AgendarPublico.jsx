@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { apiUrl } from '../helpers/api';
+import { getSocket } from '../helpers/socket';
 
 // Steps: 1=datos, 2=verificar SMS, 3=horario, 4=confirmación
 const AgendarPublico = () => {
@@ -92,34 +93,51 @@ const AgendarPublico = () => {
         fetchServicios();
     }, [formData.id_usuario]);
 
-    useEffect(() => {
-        if (formData.id_usuario && formData.fecha) {
-            const fetchSlots = async () => {
-                setLoadingSlots(true);
-                setError('');
-                setSlots([]);
-                try {
-                    const servicioSeleccionado = servicios.find(s => String(s.id) === formData.id_servicio);
-                    const duracionParam = servicioSeleccionado ? `&duracion=${servicioSeleccionado.duracion_minutos}` : '';
-                    const res  = await fetch(apiUrl(`/public/disponibilidad/${formData.id_usuario}?fecha=${formData.fecha}${duracionParam}`));
-                    const json = await res.json();
-                    if (json.success) {
-                        setSlots(json.data);
-                        if (json.data.length === 0) {
-                            setError('No hay horarios disponibles para esta fecha. Intente con otro día.');
-                        }
-                    } else {
-                        setError(json.message || 'Error al obtener horarios disponibles.');
-                    }
-                } catch {
-                    setError('Error al consultar disponibilidad.');
-                } finally {
-                    setLoadingSlots(false);
+    const fetchSlots = useCallback(async () => {
+        if (!formData.id_usuario || !formData.fecha) return;
+
+        setLoadingSlots(true);
+        setError('');
+        setSlots([]);
+        try {
+            const servicioSeleccionado = servicios.find(s => String(s.id) === formData.id_servicio);
+            const duracionParam = servicioSeleccionado ? `&duracion=${servicioSeleccionado.duracion_minutos}` : '';
+            const res  = await fetch(apiUrl(`/public/disponibilidad/${formData.id_usuario}?fecha=${formData.fecha}${duracionParam}`));
+            const json = await res.json();
+            if (json.success) {
+                setSlots(json.data);
+                if (json.data.length === 0) {
+                    setError('No hay horarios disponibles para esta fecha. Intente con otro día.');
                 }
-            };
-            fetchSlots();
+            } else {
+                setError(json.message || 'Error al obtener horarios disponibles.');
+            }
+        } catch {
+            setError('Error al consultar disponibilidad.');
+        } finally {
+            setLoadingSlots(false);
         }
-    }, [formData.id_usuario, formData.fecha, formData.id_servicio]);
+    }, [formData.id_usuario, formData.fecha, formData.id_servicio, servicios]);
+
+    useEffect(() => {
+        fetchSlots();
+    }, [fetchSlots]);
+
+    // Si otro cliente agenda/cancela una cita para el mismo nutricionista y fecha
+    // mientras el usuario está eligiendo horario, refrescamos los slots disponibles.
+    useEffect(() => {
+        if (!formData.id_usuario || !formData.fecha) return undefined;
+
+        const socket = getSocket();
+        const handleCitaActualizada = (payload) => {
+            if (String(payload?.id_usuario) === String(formData.id_usuario) && payload?.fecha === formData.fecha) {
+                fetchSlots();
+            }
+        };
+
+        socket.on('cita:actualizada', handleCitaActualizada);
+        return () => socket.off('cita:actualizada', handleCitaActualizada);
+    }, [formData.id_usuario, formData.fecha, fetchSlots]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

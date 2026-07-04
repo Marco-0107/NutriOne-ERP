@@ -8,7 +8,9 @@ const { AppDataSource } = require("./src/config/configDb");
 const { seedDatabase }  = require("./src/config/seeds");
 const { seedAlimentos } = require("./src/config/alimentosSeed");
 const { connectRedis }  = require("./src/config/redisClient");
+const { initSocket }    = require("./src/websocket");
 
+const http    = require("http");
 const express = require("express");
 const cors    = require("cors");
 const morgan  = require("morgan");
@@ -18,7 +20,9 @@ require("./src/auth/passport.auth");
 
 const apiRouter = require("./src/routes");
 
-const app = express();
+const app    = express();
+const server = http.createServer(app);
+initSocket(server);
 
 app.use(cors());
 app.use(express.json());
@@ -48,7 +52,7 @@ AppDataSource.initialize()
         // Conectar Redis (no bloqueante: si falla, la app sigue sin caché)
         await connectRedis();
 
-        app.listen(PORT, () => {
+        server.listen(PORT, () => {
             console.log(`=> Servidor corriendo en http://${HOST}:${PORT}`);
         });
     })

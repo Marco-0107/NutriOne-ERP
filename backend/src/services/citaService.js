@@ -1,6 +1,7 @@
 const { AppDataSource } = require("../config/configDb");
 const { calcularDuracionMinutos, sumarMinutosAHora } = require("../utils/citaUtils");
 const { generarCobro } = require("./cajaService");
+const { emitCitaEvent } = require("../websocket");
 
 const formatCita = (cita) => ({
     id_cita:             cita.id_cita,
@@ -148,7 +149,9 @@ const createCitaService = async ({ id_paciente, id_usuario, id_servicio, fecha, 
 
     // El cobro se genera al marcar la cita como 'realizada' (ver updateCitaService).
 
-    return formatCita(await getCitaConRelaciones(saved.id_cita));
+    const resultado = formatCita(await getCitaConRelaciones(saved.id_cita));
+    emitCitaEvent("cita:actualizada", { id_cita: resultado.id_cita, fecha: resultado.fecha, id_usuario: resultado.nutricionista?.id });
+    return resultado;
 };
 
 const updateCitaService = async (citaId, datos) => {
@@ -224,7 +227,9 @@ const updateCitaService = async (citaId, datos) => {
         await AppDataSource.getRepository("Cita").save(cita);
     }
 
-    return formatCita(await getCitaConRelaciones(citaId));
+    const resultado = formatCita(await getCitaConRelaciones(citaId));
+    emitCitaEvent("cita:actualizada", { id_cita: resultado.id_cita, fecha: resultado.fecha, id_usuario: resultado.nutricionista?.id });
+    return resultado;
 };
 
 const cancelarCitaService = async (citaId, motivo_cancelacion) => {
@@ -235,8 +240,10 @@ const cancelarCitaService = async (citaId, motivo_cancelacion) => {
     cita.estado = "cancelada";
     if (motivo_cancelacion) cita.motivo_cancelacion = motivo_cancelacion;
 
-    const updated = await AppDataSource.getRepository("Cita").save(cita);
-    return formatCita(updated);
+    const updated   = await AppDataSource.getRepository("Cita").save(cita);
+    const resultado = formatCita(updated);
+    emitCitaEvent("cita:actualizada", { id_cita: resultado.id_cita, fecha: resultado.fecha, id_usuario: resultado.nutricionista?.id });
+    return resultado;
 };
 
 module.exports = { getCitasService, getCitaByIdService, createCitaService, updateCitaService, cancelarCitaService };
