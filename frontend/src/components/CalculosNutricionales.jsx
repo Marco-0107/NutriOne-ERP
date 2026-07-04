@@ -265,7 +265,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 				<p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '-4px 0 10px' }}>
 					Peso, talla, sexo, edad y cintura se toman de la atención (arriba). Perímetros en cm; pliegues en mm.
 				</p>
-				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+				<div className="cn-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
 					<Campo label="Peso habitual (kg)" value={med.pesoHabitual} onChange={setM('pesoHabitual')} style={inputMini} />
 					<div className="form-group" style={{ marginBottom: 0 }}>
 						<label className="form-label" style={{ fontSize: '11px' }}>Periodo pérdida</label>
@@ -304,7 +304,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 						<p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '-4px 0 10px' }}>
 							Si la diferencia entre edad biológica y cronológica supera 1 año, se usará la edad biológica para cálculos de requerimientos e indicadores.
 						</p>
-						<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', alignItems: 'end' }}>
+						<div className="cn-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', alignItems: 'end' }}>
 							<div className="form-group" style={{ marginBottom: 0 }}>
 								<label className="form-label" style={{ fontSize: '11px' }}>Estadío de Tanner</label>
 								<select className="form-input" style={inputMini} value={cfg.tannerGrado} onChange={setC('tannerGrado')}>
@@ -338,7 +338,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 			{/* ── RESULTADOS ANTROPOMÉTRICOS ── */}
 			<div>
 				{seccionTitulo(<Sparkles size={13} />, 'Resultados antropométricos', '#0F766E')}
-				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+				<div className="cn-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
 					<Resultado label="IMC (kg/m²)" valor={a.imc.valor} clasif={a.imc.clasificacion} />
 					<Resultado label="Peso ideal (kg)" valor={a.pesos.ideal} />
 					<Resultado label="Peso mín–máx (kg)" valor={a.pesos.minimo != null ? `${a.pesos.minimo}–${a.pesos.maximo}` : null} />
@@ -375,7 +375,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 									</div>
 								);
 							})()}
-							<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+							<div className="cn-grid-2" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
 								{[
 									['peso_edad', 'P/E (peso/edad)'],
 									['talla_edad', 'T/E (talla/edad)'],
@@ -410,7 +410,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 			{/* ── REQUERIMIENTO ENERGÉTICO ── */}
 			<div>
 				{seccionTitulo(<Activity size={13} />, 'Requerimiento energético (GEB → GET)', '#B45309')}
-				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '12px' }}>
+				<div className="cn-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginBottom: '12px' }}>
 					<div className="form-group" style={{ marginBottom: 0 }}>
 						<label className="form-label" style={{ fontSize: '11px' }}>Nivel de actividad</label>
 						<select className="form-input" style={inputMini} value={cfg.actividadCategoria} onChange={(e) => setCfg((p) => ({ ...p, actividadCategoria: e.target.value, palOverride: '' }))}>
@@ -428,7 +428,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 					</div>
 				</div>
 				{cfg.hospitalizado && (
-					<div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px', marginBottom: '12px' }}>
+					<div className="cn-grid-2fr1fr" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px', marginBottom: '12px' }}>
 						<div className="form-group" style={{ marginBottom: 0 }}>
 							<label className="form-label" style={{ fontSize: '11px' }}>Patología (Factor Patología)</label>
 							<select className="form-input" style={inputMini} value={cfg.patologia} onChange={(e) => {
@@ -443,7 +443,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 						<Campo label="FP" value={cfg.fp} onChange={setC('fp')} style={inputMini} />
 					</div>
 				)}
-				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+				<div className="cn-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
 					{ev.energetico.geb != null ? (
 						<>
 							<Resultado label="GEB / basal (kcal/día)" valor={ev.energetico.geb} />
@@ -453,7 +453,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 					) : (
 						<>
 							<Resultado label="Req. energético (kcal/día)" valor={ev.energetico.get} />
-							<div style={{ fontSize: '11px', color: 'var(--text-muted)', gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '4px' }}>
+							<div style={{ fontSize: '11px', color: 'var(--text-muted)', gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
 								{ev.energetico.get != null
 									? `Tabla DINTA/MINSAL Anexo ${num(datosBase.edad) < 1 ? '6' : '7'} — actividad moderada con ajuste por nivel`
 									: 'Ingresa peso y edad para calcular.'}
@@ -469,7 +469,7 @@ const CalculosNutricionales = ({ datosBase = {}, initial = null, token, canGesti
 			{/* ── MACRONUTRIENTES ── */}
 			<div>
 				{seccionTitulo(<Activity size={13} />, `Macronutrientes (rangos ${ev.etapa.etiqueta})`, 'var(--morado-primario)')}
-				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+				<div className="cn-grid-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
 					{[
 						{ k: 'pro', nom: 'Proteínas', rango: rangos.pro, dist: ev.macros.distribucion?.pro, ok: enRango.pro },
 						{ k: 'cho', nom: 'Carbohidratos', rango: rangos.cho, dist: ev.macros.distribucion?.cho, ok: enRango.cho },

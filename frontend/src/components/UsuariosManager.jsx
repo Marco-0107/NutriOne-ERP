@@ -320,7 +320,7 @@ const UsuariosManager = () => {
                     boxShadow: 'var(--shadow-sm)',
                 }}>
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                        <table style={{ width: '100%', minWidth: '760px', borderCollapse: 'collapse', fontSize: '14px' }}>
                             <thead>
                                 <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
                                     {['Usuario', 'RUT', 'Correo', 'Rol', 'Estado', 'Acciones'].map(col => (
@@ -577,7 +577,7 @@ const UsuariosManager = () => {
                                     />
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                                <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                                     <div className="form-group">
                                         <label className="form-label" htmlFor="usr-nombres">NOMBRES</label>
                                         <input

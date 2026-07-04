@@ -775,7 +775,7 @@ const Calendario = () => {
 			</div>
 
 			<div>
-				<div style={{ display: 'grid', gridTemplateColumns: `repeat(${dayGroupIndex === 2 ? 1 : 3}, 1fr)`, gap: '14px' }}>
+				<div className="calendar-days-grid" style={{ display: 'grid', gridTemplateColumns: `repeat(${dayGroupIndex === 2 ? 1 : 3}, 1fr)`, gap: '14px' }}>
 					{weekDays.map((day, index) => {
 						const groupStart = dayGroupIndex * 3;
 						const groupEnd = dayGroupIndex === 2 ? 7 : groupStart + 3;
@@ -785,6 +785,7 @@ const Calendario = () => {
 						return (
 							<section
 								key={day.label}
+								className="calendar-day-section"
 								style={{
 									background: 'var(--bg-card)',
 									border: `1px solid ${day.isToday ? 'var(--morado-secundario)' : 'var(--border-color)'}`,
@@ -966,7 +967,7 @@ const Calendario = () => {
 										{pacientesLoading && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>Cargando pacientes...</div>}
 										{pacientesError && <div style={{ fontSize: '12px', color: 'var(--danger)', marginTop: '6px' }}>{pacientesError}</div>}
 								</div>
-								<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+								<div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
 									<div className="form-group">
 										<label className="form-label">Fecha</label>
 										<input type="date" className="form-input" value={createForm.fecha} onChange={handleFechaChange} required />
@@ -1142,7 +1143,7 @@ const Calendario = () => {
 									)}
 
 									{/* Tipo y fecha — encabezado de datos generales */}
-									<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+									<div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
 										<div className="form-group" style={{ marginBottom: 0 }}>
 											<label className="form-label">Tipo de atención <span style={{ color: 'var(--danger)' }}>*</span></label>
 											<select id="at-tipo" className="form-input" value={atencionForm.tipo} onChange={handleAtencionChange('tipo')} required>
@@ -1209,7 +1210,7 @@ const Calendario = () => {
 											/>
 										</div>
 									)}
-									<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+									<div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
 										<div className="form-group" style={{ marginBottom: 0 }}>
 											<label className="form-label">Sexo</label>
 											<select id="at-sexo" className="form-input" value={atencionForm.sexo} onChange={handleAtencionChange('sexo')}>
@@ -1231,7 +1232,7 @@ const Calendario = () => {
 										<Weight size={14} />
 										Datos de atención
 									</div>
-									<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+									<div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
 										<div className="form-group" style={{ marginBottom: 0 }}>
 											<label className="form-label">Peso (kg)</label>
 											<input id="at-peso" type="number" step="0.01" min="0" className="form-input" placeholder="Ej: 72.5" value={atencionForm.peso} onChange={handleAtencionChange('peso')} />

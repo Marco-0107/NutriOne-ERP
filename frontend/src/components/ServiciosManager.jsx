@@ -174,7 +174,7 @@ const ServiciosManager = () => {
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px' }}>
+            <div className="form-sidebar-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px' }}>
                 <div style={{
                     background: 'var(--bg-card)',
                     padding: '24px',
@@ -227,7 +227,7 @@ const ServiciosManager = () => {
                             />
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                        <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                             <div className="form-group">
                                 <label className="form-label" htmlFor="serv-precio">PRECIO (CLP)</label>
                                 <input
