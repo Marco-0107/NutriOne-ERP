@@ -221,6 +221,14 @@ const SEED_PERMISSIONS = [
         codigo: "caja:anular",
         modulo: "Caja y Pagos",
         descripcion: "Permite anular cobros en estado pendiente o pagado parcial"
+    },
+
+    // ─────────────── Módulo: Dashboard ───────────────
+    {
+        nombre: "Ver Dashboard",
+        codigo: "dashboard:ver",
+        modulo: "Dashboard",
+        descripcion: "Permite ver el dashboard con indicadores financieros, ocupación de agenda y datos del consultorio"
     }
 ];
 

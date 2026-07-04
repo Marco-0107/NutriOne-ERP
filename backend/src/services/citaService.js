@@ -158,6 +158,8 @@ const updateCitaService = async (citaId, datos) => {
     if (!cita) throw { status: 404, message: "Cita no encontrada" };
     if (cita.estado === "cancelada") throw { status: 400, message: "No se puede modificar una cita cancelada" };
 
+    const estadoOriginal = cita.estado;
+
     if (id_paciente !== undefined) {
         const paciente = await AppDataSource.getRepository("Paciente").findOneBy({ id: id_paciente });
         if (!paciente) throw { status: 404, message: "Paciente no encontrado" };
@@ -201,7 +203,7 @@ const updateCitaService = async (citaId, datos) => {
         await verificarSinConflicto(cita.usuario.id, cita.fecha, hi, hf, citaId);
     }
 
-    const marcandoCompletada = estado === "completada" && cita.estado !== "completada";
+    const marcandoCompletada = estado === "completada" && estadoOriginal !== "completada";
 
     if (marcandoCompletada) {
         // Atómico: la cita pasa a 'completada' y se genera el cobro en la misma transacción.

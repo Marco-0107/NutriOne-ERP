@@ -263,6 +263,21 @@ const getMovimientosCaja = async ({ desde, hasta, nutricionistaId } = {}) => {
     };
 };
 
+// Suma la deuda pendiente de todos los cobros del consultorio (excluye anulados).
+const getDeudaTotalConsultorio = async () => {
+    const cobros = await AppDataSource.getRepository("Cobro")
+        .createQueryBuilder("cobro")
+        .where("cobro.estado != :anulado", { anulado: "anulado" })
+        .getMany();
+
+    const totalDeuda = cobros.reduce(
+        (acc, c) => acc + (Number(c.monto_total) - Number(c.monto_pagado)),
+        0
+    );
+
+    return parseFloat(totalDeuda.toFixed(2));
+};
+
 // Anula un cobro pendiente o parcialmente pagado.
 // Los pagos previos se conservan como historial.
 const anularCobro = async (cobroId) => {
@@ -307,5 +322,6 @@ module.exports = {
     getCobros,
     getResumenPaciente,
     getMovimientosCaja,
+    getDeudaTotalConsultorio,
     anularCobro,
 };
