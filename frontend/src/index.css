@@ -550,6 +550,8 @@ textarea.form-input {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   margin-bottom: 24px;
 }
 
@@ -659,6 +661,7 @@ textarea.form-input {
   align-items: center;
   justify-content: center;
   z-index: 100;
+  padding: 16px;
   animation: fadeIn var(--transition-fast);
 }
 
@@ -974,6 +977,80 @@ textarea.form-input {
   }
 }
 
+@media (max-width: 480px) {
+  .main-header {
+    padding: 0 16px;
+  }
+}
+
+/* Calendario y formularios de 2 columnas: colapsan en pantallas angostas */
+.form-grid-2col {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .calendar-days-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .calendar-day-section {
+    height: auto !important;
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 560px) {
+  .form-grid-2col {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Layouts de formulario (1fr 2fr) usados en Servicios y Disponibilidad */
+@media (max-width: 900px) {
+  .form-sidebar-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Registro de paciente */
+@media (max-width: 600px) {
+  .rp-field-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .rp-section-wrapper {
+    padding: 18px !important;
+  }
+  .rp-success-card {
+    padding: 32px 20px !important;
+  }
+}
+
+/* Panel de minuta: grid de macros (Energía/Proteínas/Carbs/Grasas/Fibra) */
+@media (max-width: 480px) {
+  .pm-macro-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    row-gap: 10px !important;
+  }
+}
+
+/* Calculadora antropométrica: colapsa grids de 2/3/4 columnas en pantallas angostas */
+@media (max-width: 700px) {
+  .cn-grid-4,
+  .cn-grid-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .cn-grid-2fr1fr {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 420px) {
+  .cn-grid-4,
+  .cn-grid-3,
+  .cn-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 /* ==========================================================================
    PÁGINA PÚBLICA DE AGENDAMIENTO
    ========================================================================== */
@@ -1235,6 +1312,20 @@ textarea.form-input {
   }
   .public-booking-body {
     padding: 20px;
+  }
+  .public-step-text {
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .public-step-num {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+  .public-step-text {
+    display: none;
   }
 }
 

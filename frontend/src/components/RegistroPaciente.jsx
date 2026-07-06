@@ -65,6 +65,7 @@ const SECTION_STYLES = {
 
 const FieldGrid = ({ children, cols = 2 }) => (
 	<div
+		className="rp-field-grid"
 		style={{
 			display: 'grid',
 			gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
@@ -76,7 +77,7 @@ const FieldGrid = ({ children, cols = 2 }) => (
 );
 
 const FormSection = ({ icon: Icon, title, children }) => (
-	<div style={SECTION_STYLES.wrapper}>
+	<div className="rp-section-wrapper" style={SECTION_STYLES.wrapper}>
 		<div style={SECTION_STYLES.sectionTitle}>
 			<span style={SECTION_STYLES.sectionIcon}>
 				<Icon size={16} color="var(--morado-primario)" />
@@ -171,6 +172,7 @@ const RegistroPaciente = () => {
 		return (
 			<div style={{ animation: 'slideIn 0.3s ease-out' }}>
 				<div
+					className="rp-success-card"
 					style={{
 						maxWidth: '560px',
 						margin: '0 auto',

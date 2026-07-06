@@ -253,8 +253,8 @@ const PanelMinuta = ({ value, onChange, objetivoCalorico, token, disabled = fals
                 {/* Buscador */}
                 {!disabled && (
                     <div ref={searchWrapRef} style={{ position: 'relative', marginBottom: '10px' }}>
-                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                            <div style={{ flex: 1, position: 'relative' }}>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: '140px', position: 'relative' }}>
                                 <Search size={13} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
                                 <input
                                     value={busqueda}
@@ -402,7 +402,7 @@ const PanelMinuta = ({ value, onChange, objetivoCalorico, token, disabled = fals
                     )}
 
                     {/* Resumen de macronutrientes */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', textAlign: 'center' }}>
+                    <div className="pm-macro-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px', textAlign: 'center' }}>
                         {MACROS_CONFIG.map(m => (
                             <div key={m.key}>
                                 <div style={{ fontSize: '14px', fontWeight: 800, color: m.color, lineHeight: 1.2 }}>
