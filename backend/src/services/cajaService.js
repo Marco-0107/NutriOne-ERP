@@ -263,6 +263,21 @@ const getMovimientosCaja = async ({ desde, hasta, nutricionistaId } = {}) => {
     };
 };
 
+// Suma la deuda pendiente de todos los cobros del consultorio (excluye anulados).
+const getDeudaTotalConsultorio = async () => {
+    const cobros = await AppDataSource.getRepository("Cobro")
+        .createQueryBuilder("cobro")
+        .where("cobro.estado != :anulado", { anulado: "anulado" })
+        .getMany();
+
+    const totalDeuda = cobros.reduce(
+        (acc, c) => acc + (Number(c.monto_total) - Number(c.monto_pagado)),
+        0
+    );
+
+    return parseFloat(totalDeuda.toFixed(2));
+};
+
 // Anula un cobro pendiente o parcialmente pagado.
 // Los pagos previos se conservan como historial.
 const anularCobro = async (cobroId) => {
@@ -300,6 +315,49 @@ const anularCobro = async (cobroId) => {
     }
 };
 
+// Retorna el resumen de ingresos del mes en curso, agrupado por método de pago.
+const getResumenCaja = async ({ nutricionistaId } = {}) => {
+    const now    = new Date();
+    const anio   = now.getFullYear();
+    const mes    = String(now.getMonth() + 1).padStart(2, '0');
+    const desde  = `${anio}-${mes}-01`;
+    // Último día del mes actual
+    const ultimoDia = new Date(anio, now.getMonth() + 1, 0).getDate();
+    const hasta  = `${anio}-${mes}-${String(ultimoDia).padStart(2, '0')}`;
+
+    const qb = AppDataSource.getRepository("Transaccion")
+        .createQueryBuilder("pago")
+        .innerJoin("pago.cobro", "cobro")
+        .innerJoin("cobro.cita", "cita")
+        .innerJoin("cita.usuario", "nutricionista")
+        .where("pago.id_cobro IS NOT NULL")
+        .andWhere("pago.fecha_pago::date >= :desde", { desde })
+        .andWhere("pago.fecha_pago::date <= :hasta", { hasta });
+
+    if (nutricionistaId) {
+        qb.andWhere("nutricionista.id = :nutricionistaId", { nutricionistaId: Number(nutricionistaId) });
+    }
+
+    const pagos = await qb
+        .select(["pago.monto", "pago.metodo_pago"])
+        .getMany();
+
+    const porMetodo = {};
+    let totalEnCaja = 0;
+    for (const p of pagos) {
+        const metodo = p.metodo_pago;
+        const monto  = Number(p.monto);
+        porMetodo[metodo] = parseFloat(((porMetodo[metodo] || 0) + monto).toFixed(2));
+        totalEnCaja += monto;
+    }
+
+    return {
+        periodo:      `${mes}/${anio}`,
+        total_en_caja: parseFloat(totalEnCaja.toFixed(2)),
+        por_metodo:   porMetodo,
+    };
+};
+
 module.exports = {
     generarCobro,
     registrarPago,
@@ -307,5 +365,7 @@ module.exports = {
     getCobros,
     getResumenPaciente,
     getMovimientosCaja,
+    getDeudaTotalConsultorio,
+    getResumenCaja,
     anularCobro,
 };

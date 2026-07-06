@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
+import { getSocket } from '../helpers/socket';
 import { generarPDFSesion, fetchCitaCompleta } from '../helpers/reportes';
 import CalculosNutricionales from './CalculosNutricionales';
 import PanelMinuta from './PanelMinuta';
@@ -225,6 +226,17 @@ const Calendario = () => {
 	useEffect(() => {
 		fetchCitas();
 	}, [weekDays]);
+
+	const fetchCitasRef = useRef(fetchCitas);
+	fetchCitasRef.current = fetchCitas;
+
+	useEffect(() => {
+		const socket = getSocket();
+		const handleCitaActualizada = () => fetchCitasRef.current();
+
+		socket.on('cita:actualizada', handleCitaActualizada);
+		return () => socket.off('cita:actualizada', handleCitaActualizada);
+	}, []);
 
 	const fetchSlots = async (nutricionistaId, fecha, duracionMinutos) => {
 		if (!nutricionistaId || !fecha) { setSlots([]); return; }
