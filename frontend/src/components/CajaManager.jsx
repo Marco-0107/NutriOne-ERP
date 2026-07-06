@@ -939,8 +939,14 @@ const CajaManager = () => {
 
     const fetchMovimientos = async (e) => {
         e.preventDefault();
-        setLoadingMov(true);
         setErrorMov('');
+
+        if (desde && hasta && desde > hasta) {
+            setErrorMov('La fecha inicial no puede ser posterior a la fecha final.');
+            return;
+        }
+
+        setLoadingMov(true);
         try {
             const params = new URLSearchParams();
             if (desde) params.append('desde', desde);

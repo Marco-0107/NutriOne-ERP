@@ -8,6 +8,7 @@ import {
     ChevronLeft, MapPin, MoreVertical, TrendingUp,
 } from 'lucide-react';
 import { apiUrl } from '../helpers/api';
+import { validarRut, validarTelefono, validarFechaNacimiento, validarFechaNoFutura } from '../helpers/validaciones';
 import PanelMinuta from './PanelMinuta';
 
 const EMPTY_FORM = {
@@ -123,6 +124,7 @@ const ModalAtencion = ({ cita, token, onClose }) => {
         setAtencionError('');
         if (!atencionForm.tipo.trim())        return setAtencionError('El tipo de atención es requerido.');
         if (!atencionForm.fecha_atencion)      return setAtencionError('La fecha de atención es requerida.');
+        if (!validarFechaNoFutura(atencionForm.fecha_atencion)) return setAtencionError('La fecha de atención no puede ser futura.');
         if (!String(atencionForm.edad).trim()) return setAtencionError('La edad del paciente es requerida.');
 
         setAtencionLoading(true);
@@ -218,7 +220,7 @@ const ModalAtencion = ({ cita, token, onClose }) => {
                             )}
 
                             {/* Tipo y fecha */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+                            <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                     <label className="form-label">Tipo de atención <span style={{ color: 'var(--danger)' }}>*</span></label>
                                     <select className="form-input" value={atencionForm.tipo} onChange={handleChange('tipo')} required disabled={!canEdit}>
@@ -267,7 +269,7 @@ const ModalAtencion = ({ cita, token, onClose }) => {
                                     <input type="text" className="form-input" placeholder="Nombre por el que prefiere ser llamado/a" value={atencionForm.nombre_social} onChange={handleChange('nombre_social')} disabled={!canEdit} />
                                 </div>
                             )}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+                            <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                     <label className="form-label">Sexo</label>
                                     <select className="form-input" value={atencionForm.sexo} onChange={handleChange('sexo')} disabled={!canEdit}>
@@ -289,7 +291,7 @@ const ModalAtencion = ({ cita, token, onClose }) => {
                                 <Weight size={14} />
                                 Datos de atención
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
+                            <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '22px' }}>
                                 <div className="form-group" style={{ marginBottom: 0 }}>
                                     <label className="form-label">Peso (kg)</label>
                                     <input type="number" step="0.01" min="0" className="form-input" placeholder="Ej: 72.5" value={atencionForm.peso} onChange={handleChange('peso')} disabled={!canEdit} />
@@ -546,7 +548,7 @@ const ModalHistorialAtenciones = ({ paciente, token, onClose }) => {
                                                     {s.label}
                                                 </span>
                                             </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
+                                            <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 16px' }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-secondary)' }}>
                                                     <CalendarDays size={13} style={{ color: s.accent }} />
                                                     {cita.fecha}
@@ -754,6 +756,13 @@ const PacientesManager = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormError('');
+
+        if (!validarRut(formData.rut)) return setFormError('El RUT ingresado no es válido.');
+        if (!validarFechaNacimiento(formData.fecha_nacimiento)) return setFormError('La fecha de nacimiento no es válida.');
+        if (formData.telefono?.trim() && !validarTelefono(formData.telefono)) {
+            return setFormError('El teléfono no tiene un formato válido (ej: +56912345678).');
+        }
+
         setFormLoading(true);
 
         const url    = editingPaciente
@@ -919,7 +928,7 @@ const PacientesManager = () => {
                     boxShadow: 'var(--shadow-sm)',
                 }}>
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14px' }}>
+                        <table style={{ width: '100%', minWidth: '860px', borderCollapse: 'collapse', fontSize: '14px' }}>
                             <thead>
                                 <tr style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
                                     {['Paciente', 'RUT', 'Fecha Nac.', 'Edad', 'Previsión', 'Estado', 'Acciones'].map(col => (
@@ -1246,7 +1255,7 @@ const PacientesManager = () => {
                                     />
                                 </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                                <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                                     <div className="form-group">
                                         <label className="form-label" htmlFor="pac-nombres">NOMBRES</label>
                                         <input
@@ -1296,7 +1305,7 @@ const PacientesManager = () => {
                                     Datos Clínicos
                                 </p>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                                <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                                     <div className="form-group">
                                         <label className="form-label" htmlFor="pac-fn">FECHA DE NACIMIENTO</label>
                                         <input

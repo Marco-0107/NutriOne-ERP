@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
+import { validarRut, validarEmail, validarTelefono, validarFechaNacimiento } from '../helpers/validaciones';
 
 const INITIAL_FORM = {
 	nombres: '',
@@ -64,6 +65,7 @@ const SECTION_STYLES = {
 
 const FieldGrid = ({ children, cols = 2 }) => (
 	<div
+		className="rp-field-grid"
 		style={{
 			display: 'grid',
 			gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
@@ -75,7 +77,7 @@ const FieldGrid = ({ children, cols = 2 }) => (
 );
 
 const FormSection = ({ icon: Icon, title, children }) => (
-	<div style={SECTION_STYLES.wrapper}>
+	<div className="rp-section-wrapper" style={SECTION_STYLES.wrapper}>
 		<div style={SECTION_STYLES.sectionTitle}>
 			<span style={SECTION_STYLES.sectionIcon}>
 				<Icon size={16} color="var(--morado-primario)" />
@@ -107,9 +109,16 @@ const RegistroPaciente = () => {
 		if (!form.nombres.trim()) return setError('El nombre es requerido.');
 		if (!form.apellido_paterno.trim()) return setError('El apellido paterno es requerido.');
 		if (!form.rut.trim()) return setError('El RUT es requerido.');
+		if (!validarRut(form.rut)) return setError('El RUT ingresado no es válido.');
 		if (!form.correo.trim()) return setError('El correo electrónico es requerido.');
+		if (!validarEmail(form.correo)) return setError('El correo electrónico no tiene un formato válido.');
 		if (!form.fecha_nacimiento) return setError('La fecha de nacimiento es requerida.');
+		if (!validarFechaNacimiento(form.fecha_nacimiento)) return setError('La fecha de nacimiento no es válida.');
 		if (!form.sexo) return setError('El sexo es requerido.');
+		if (form.telefono.trim() && !validarTelefono(form.telefono)) return setError('El teléfono no tiene un formato válido (ej: +56912345678).');
+		if (form.contacto_emergencia_telefono.trim() && !validarTelefono(form.contacto_emergencia_telefono)) {
+			return setError('El teléfono de contacto de emergencia no tiene un formato válido.');
+		}
 
 		setLoading(true);
 
@@ -163,6 +172,7 @@ const RegistroPaciente = () => {
 		return (
 			<div style={{ animation: 'slideIn 0.3s ease-out' }}>
 				<div
+					className="rp-success-card"
 					style={{
 						maxWidth: '560px',
 						margin: '0 auto',

@@ -346,7 +346,7 @@ const ModalDetalleControl = ({ ficha, onClose }) => {
                     </button>
                 </div>
                 <div className="modal-body">
-                    <dl style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <dl className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                         {rows.map(r => (
                             <div key={r.label} style={{
                                 background: 'var(--bg-tertiary)', borderRadius: 'var(--radius-sm)', padding: '12px 14px',

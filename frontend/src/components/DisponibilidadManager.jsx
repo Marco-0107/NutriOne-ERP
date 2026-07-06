@@ -175,7 +175,7 @@ const DisponibilidadManager = () => {
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px' }}>
+            <div className="form-sidebar-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '30px' }}>
                 {/* Form column */}
                 <div style={{
                     background: 'var(--bg-card)',
@@ -216,7 +216,7 @@ const DisponibilidadManager = () => {
                             </select>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
+                        <div className="form-grid-2col" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '16px' }}>
                             <div className="form-group">
                                 <label className="form-label" htmlFor="disp-inicio">HORA INICIO</label>
                                 <input
@@ -304,6 +304,8 @@ const DisponibilidadManager = () => {
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
+                                        flexWrap: 'wrap',
+                                        gap: '12px',
                                         padding: '14px 18px',
                                         background: 'var(--bg-primary)',
                                         border: '1px solid var(--border-color)',
@@ -313,7 +315,7 @@ const DisponibilidadManager = () => {
                                     onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--morado-secundario)'}
                                     onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-color)'}
                                 >
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
                                         <div style={{
                                             background: 'var(--morado-primario)',
                                             color: 'var(--blanco)',
