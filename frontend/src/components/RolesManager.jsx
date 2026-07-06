@@ -98,6 +98,10 @@ const RolesManager = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setFormError('');
+
+        if (formData.nombre.trim().length < 3) return setFormError('El nombre del rol debe tener al menos 3 caracteres.');
+        if (formData.permisos.length === 0)     return setFormError('Debes seleccionar al menos un permiso.');
+
         setFormLoading(true);
 
         const url    = editingRole ? apiUrl(`/roles/${editingRole.id_rol}`) : apiUrl('/roles');

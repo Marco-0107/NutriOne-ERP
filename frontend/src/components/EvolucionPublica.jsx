@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import { ChevronLeft, LogOut } from 'lucide-react';
 import { apiUrl } from '../helpers/api';
+import { validarRut } from '../helpers/validaciones';
 import EvolucionDashboard from './EvolucionDashboard';
 
 // Steps: 1=identificación (RUT+teléfono), 2=verificar SMS, 3=evolución
@@ -53,6 +54,10 @@ const EvolucionPublica = () => {
         }
         if (!/^\d{1,3}(\.\d{3}){1,2}-[\dkK]$/i.test(rut)) {
             setError('El RUT ingresado no tiene un formato válido (ej: 12.345.678-9).');
+            return false;
+        }
+        if (!validarRut(rut)) {
+            setError('El RUT ingresado no es válido.');
             return false;
         }
         if (!/^\+?56[2-9]\d{8}$|^\+?[1-9]\d{7,14}$/.test(telefono)) {

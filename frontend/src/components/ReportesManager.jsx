@@ -128,7 +128,14 @@ const ReporteFinanciero = ({ token }) => {
     const [alerta, setAlerta]   = useState(null);
 
     const exportar = async () => {
-        setAlerta(null); setLoading(true);
+        setAlerta(null);
+
+        if (desde && hasta && desde > hasta) {
+            setAlerta({ tipo: 'error', mensaje: 'La fecha inicial no puede ser posterior a la fecha final.' });
+            return;
+        }
+
+        setLoading(true);
         try {
             const params = new URLSearchParams();
             if (desde) params.append('desde', desde);
@@ -198,7 +205,14 @@ const ReporteCitas = ({ token }) => {
     const [alerta, setAlerta]   = useState(null);
 
     const exportar = async () => {
-        setAlerta(null); setLoading(true);
+        setAlerta(null);
+
+        if (desde && hasta && desde > hasta) {
+            setAlerta({ tipo: 'error', mensaje: 'La fecha inicial no puede ser posterior a la fecha final.' });
+            return;
+        }
+
+        setLoading(true);
         try {
             const params = new URLSearchParams();
             if (desde)  params.append('desde',  desde);
@@ -286,7 +300,14 @@ const PDFSesion = ({ token }) => {
     const [alerta, setAlerta]   = useState(null);
 
     const buscar = async () => {
-        setAlerta(null); setBuscando(true); setCitas(null);
+        setAlerta(null);
+
+        if (desde && hasta && desde > hasta) {
+            setAlerta({ tipo: 'error', mensaje: 'La fecha inicial no puede ser posterior a la fecha final.' });
+            return;
+        }
+
+        setBuscando(true); setCitas(null);
         try {
             const params = new URLSearchParams({ estado: 'completada' });
             if (desde) params.append('desde', desde);
@@ -367,7 +388,14 @@ const ReciboPago = ({ token }) => {
     const [alerta, setAlerta]   = useState(null);
 
     const buscar = async () => {
-        setAlerta(null); setBuscando(true); setCobros(null);
+        setAlerta(null);
+
+        if (desde && hasta && desde > hasta) {
+            setAlerta({ tipo: 'error', mensaje: 'La fecha inicial no puede ser posterior a la fecha final.' });
+            return;
+        }
+
+        setBuscando(true); setCobros(null);
         try {
             const params = new URLSearchParams();
             if (desde) params.append('desde', desde);

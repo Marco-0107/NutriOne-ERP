@@ -26,6 +26,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { apiUrl } from '../helpers/api';
 import { generarPDFSesion, fetchCitaCompleta } from '../helpers/reportes';
+import { validarFechaNoPasada, validarFechaNoFutura } from '../helpers/validaciones';
 import CalculosNutricionales from './CalculosNutricionales';
 import PanelMinuta from './PanelMinuta';
 
@@ -387,6 +388,7 @@ const Calendario = () => {
 		if (!createForm.id_paciente)  return setCreateError('Debes seleccionar un paciente.');
 		if (!nutricionistaId)         return setCreateError('Debes seleccionar un nutricionista.');
 		if (!createForm.fecha)        return setCreateError('La fecha es requerida.');
+		if (!validarFechaNoPasada(createForm.fecha)) return setCreateError('No puedes agendar una cita en una fecha pasada.');
 		if (!createForm.hora_inicio)  return setCreateError('Debes seleccionar un horario disponible.');
 
 		setCreateLoading(true);
@@ -537,6 +539,7 @@ const Calendario = () => {
 
 		if (!atencionForm.tipo.trim())            return setAtencionError('El tipo de atención es requerido.');
 		if (!atencionForm.fecha_atencion)          return setAtencionError('La fecha de atención es requerida.');
+		if (!validarFechaNoFutura(atencionForm.fecha_atencion)) return setAtencionError('La fecha de atención no puede ser futura.');
 		if (!String(atencionForm.edad).trim())     return setAtencionError('La edad del paciente es requerida.');
 
 		// Validación de la calculadora: si hay requerimiento energético, los macros deben sumar 100%.
