@@ -1,10 +1,10 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList, Clock, CalendarDays, Salad, Briefcase, Wallet, FileDown } from 'lucide-react';
+import { LayoutDashboard, ShieldCheck, LogOut, Activity, Users, UserCog, ClipboardList, Clock, CalendarDays, Salad, Briefcase, Wallet, FileDown, X } from 'lucide-react';
 
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
     const { user, logout, hasPermission } = useAuth();
 
     if (!user) return null;
@@ -23,7 +23,13 @@ const Sidebar = () => {
     };
 
     return (
-        <aside className="sidebar">
+        <>
+            {isOpen && <div className="sidebar-overlay" onClick={onClose}></div>}
+            <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`}>
+            <button className="sidebar-close-btn" onClick={onClose} aria-label="Cerrar menú">
+                <X size={22} />
+            </button>
+
             <div className="sidebar-logo">
                 <Activity size={24} style={{ color: 'var(--morado-primario)' }} />
                 <span style={{ fontWeight: 800 }}>NutriOne ERP</span>
@@ -47,6 +53,7 @@ const Sidebar = () => {
                 <NavLink
                     to="/"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                     end
                 >
                     <LayoutDashboard size={18} />
@@ -57,6 +64,7 @@ const Sidebar = () => {
                 <NavLink
                     to="/calendario"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                 >
                     <CalendarDays size={18} />
                     <span>Calendario</span>
@@ -66,6 +74,7 @@ const Sidebar = () => {
                 <NavLink
                     to="/nutricion"
                     className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                 >
                     <Salad size={18} />
                     <span>Bases Nutricionales</span>
@@ -75,6 +84,7 @@ const Sidebar = () => {
                     <NavLink
                         to="/disponibilidad"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                     >
                         <Clock size={18} />
                         <span>Disponibilidad</span>
@@ -85,6 +95,7 @@ const Sidebar = () => {
                     <NavLink
                         to="/servicios"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                     >
                         <Briefcase size={18} />
                         <span>Servicios</span>
@@ -95,6 +106,7 @@ const Sidebar = () => {
                     <NavLink
                         to="/caja"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                     >
                         <Wallet size={18} />
                         <span>Caja y Pagos</span>
@@ -105,6 +117,7 @@ const Sidebar = () => {
                     <NavLink
                         to="/reportes"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                     >
                         <FileDown size={18} />
                         <span>Reportes</span>
@@ -115,6 +128,7 @@ const Sidebar = () => {
                     <NavLink
                         to="/roles"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                     >
                         <ShieldCheck size={18} />
                         <span>Roles y Permisos</span>
@@ -125,6 +139,7 @@ const Sidebar = () => {
                     <NavLink
                         to="/usuarios"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                     >
                         <UserCog size={18} />
                         <span>Usuarios</span>
@@ -135,6 +150,7 @@ const Sidebar = () => {
                     <NavLink
                         to="/pacientes"
                         className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
+                    onClick={onClose}
                     >
                         <Users size={18} />
                         <span>Pacientes</span>
@@ -148,7 +164,8 @@ const Sidebar = () => {
                     <span>Cerrar Sesión</span>
                 </button>
             </div>
-        </aside>
+            </aside>
+        </>
     );
 };
 
