@@ -170,6 +170,21 @@ const getFichasByPaciente = async (req, res) => {
             .orderBy("ficha.fecha_atencion", "ASC")
             .getMany();
 
+        // FichaClinica no declara relación formal con EvaluacionNutricional
+        // (la FK vive al revés, en evaluacion_nutricional.id_ficha), así que
+        // se completa el % de grasa corporal con una segunda consulta liviana.
+        if (fichas.length > 0) {
+            const idsFicha = fichas.map((f) => f.id_ficha);
+            const evaluaciones = await AppDataSource.query(
+                `SELECT id_ficha, porcentaje_grasa FROM evaluacion_nutricional WHERE id_ficha = ANY($1::int[])`,
+                [idsFicha]
+            );
+            const grasaPorFicha = new Map(evaluaciones.map((e) => [e.id_ficha, e.porcentaje_grasa]));
+            fichas.forEach((f) => {
+                f.porcentaje_grasa = grasaPorFicha.get(f.id_ficha) ?? null;
+            });
+        }
+
         return res.json({ success: true, data: fichas });
     } catch (err) {
         return serverError(res, err, "fichaController.getFichasByPaciente");

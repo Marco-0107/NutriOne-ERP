@@ -82,6 +82,7 @@ const formatFichaPublica = (ficha) => ({
     derivaciones:            ficha.derivaciones,
     estado:                  ficha.estado,
     minuta:                  ficha.minuta ?? null,
+    porcentaje_grasa:        ficha.porcentaje_grasa ?? null,
     cita: ficha.cita?.usuario
         ? {
             usuario: {
@@ -108,6 +109,21 @@ const getEvolucionPublicaService = async (rut, telefono) => {
         .where("paciente.id = :id_paciente", { id_paciente: paciente.id })
         .orderBy("ficha.fecha_atencion", "ASC")
         .getMany();
+
+    // FichaClinica no declara relación formal con EvaluacionNutricional
+    // (la FK vive al revés, en evaluacion_nutricional.id_ficha), así que
+    // se completa el % de grasa corporal con una segunda consulta liviana.
+    if (fichas.length > 0) {
+        const idsFicha = fichas.map((f) => f.id_ficha);
+        const evaluaciones = await AppDataSource.query(
+            `SELECT id_ficha, porcentaje_grasa FROM evaluacion_nutricional WHERE id_ficha = ANY($1::int[])`,
+            [idsFicha]
+        );
+        const grasaPorFicha = new Map(evaluaciones.map((e) => [e.id_ficha, e.porcentaje_grasa]));
+        fichas.forEach((f) => {
+            f.porcentaje_grasa = grasaPorFicha.get(f.id_ficha) ?? null;
+        });
+    }
 
     return {
         paciente: formatPacientePublico(paciente),
