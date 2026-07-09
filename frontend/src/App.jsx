@@ -113,8 +113,8 @@ const AppContent = () => {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                         <button
                             className="mobile-menu-btn"
-                            onClick={() => setSidebarOpen(true)}
-                            aria-label="Abrir menú"
+                            onClick={() => setSidebarOpen((o) => !o)}
+                            aria-label="Abrir o cerrar menú"
                         >
                             <Menu size={22} />
                         </button>
