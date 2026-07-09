@@ -37,6 +37,7 @@ const INDICADORES = [
     { key: 'peso',    label: 'Peso',    unit: 'kg', color: '#6D28D9' },
     { key: 'imc',     label: 'IMC',     unit: '',   color: '#14B8A6' },
     { key: 'cintura', label: 'Cintura', unit: 'cm', color: '#F59E0B' },
+    { key: 'grasa',   label: 'Grasa corporal', unit: '%', color: '#EC4899' },
 ];
 
 // ── Sub: Gráfico SVG ──────────────────────────────────────────────────────────
@@ -409,7 +410,8 @@ const EvolucionDashboard = ({ paciente, fichas, headerActions }) => {
         const valor =
             indicador === 'peso'    ? (f.peso    ?? null) :
             indicador === 'imc'     ? imc :
-            indicador === 'cintura' ? (f.circunferencia_cintura ?? null) : null;
+            indicador === 'cintura' ? (f.circunferencia_cintura ?? null) :
+            indicador === 'grasa'   ? (f.porcentaje_grasa ?? null) : null;
         return { fecha: f.fecha_atencion, valor, ficha: f };
     }).filter(d => d.valor !== null);
 
@@ -432,11 +434,17 @@ const EvolucionDashboard = ({ paciente, fichas, headerActions }) => {
     const penultCintura = fCintura.length > 1 ? fCintura[fCintura.length - 2].circunferencia_cintura   : null;
     const deltaCintura  = (ultimaCintura !== null && penultCintura !== null) ? +(ultimaCintura - penultCintura).toFixed(1) : null;
 
+    const fGrasa        = fichas.filter(f => f.porcentaje_grasa != null);
+    const ultimaGrasa   = fGrasa.length    ? fGrasa[fGrasa.length - 1].porcentaje_grasa                : null;
+    const penultGrasa   = fGrasa.length > 1 ? fGrasa[fGrasa.length - 2].porcentaje_grasa               : null;
+    const deltaGrasa    = (ultimaGrasa !== null && penultGrasa !== null) ? +(ultimaGrasa - penultGrasa).toFixed(1) : null;
+
     const clasificacion = clasificarIMC(ultimoIMC);
 
     // ── Deltas totales (primera → última) ────────────────────────────────────
     const primeraPeso    = fPeso.length    > 1 ? fPeso[0].peso                               : null;
     const primeraCintura = fCintura.length > 1 ? fCintura[0].circunferencia_cintura          : null;
+    const primeraGrasa   = fGrasa.length   > 1 ? fGrasa[0].porcentaje_grasa                  : null;
     const primeraFichaIMC = fichas.find(f => f.peso && f.talla);
     const primeraIMC     = primeraFichaIMC ? calcIMC(primeraFichaIMC.peso, primeraFichaIMC.talla) : null;
     const fichasConIMC   = fichas.filter(f => f.peso && f.talla);
@@ -445,6 +453,7 @@ const EvolucionDashboard = ({ paciente, fichas, headerActions }) => {
         peso:    primeraPeso    !== null && ultimoPeso    !== null ? +(ultimoPeso    - primeraPeso).toFixed(1)    : null,
         imc:     primeraIMC    !== null && ultimoIMC     !== null && fichasConIMC.length > 1 ? +(ultimoIMC  - primeraIMC).toFixed(1)    : null,
         cintura: primeraCintura !== null && ultimaCintura !== null ? +(ultimaCintura - primeraCintura).toFixed(1) : null,
+        grasa:   primeraGrasa   !== null && ultimaGrasa   !== null ? +(ultimaGrasa   - primeraGrasa).toFixed(1)   : null,
     };
 
     const nombreCompleto = paciente ? getFullName(paciente.usuario) : '...';
@@ -568,7 +577,7 @@ const EvolucionDashboard = ({ paciente, fichas, headerActions }) => {
                         <KpiCard icon={Weight}     label="Peso"           value={ultimoPeso}    unit=" kg" delta={deltaPeso}    color="#6D28D9" />
                         <KpiCard icon={Calculator} label="IMC"            value={ultimoIMC}     unit=""    delta={deltaIMC}     color="#14B8A6" sub={clasificacion} />
                         <KpiCard icon={Ruler}      label="Cintura"        value={ultimaCintura} unit=" cm" delta={deltaCintura} color="#F59E0B" />
-                        <KpiCard icon={Activity}   label="Grasa corporal" value={null}          unit="%"   delta={null}         color="#EC4899" />
+                        <KpiCard icon={Activity}   label="Grasa corporal" value={ultimaGrasa}   unit="%"   delta={deltaGrasa}   color="#EC4899" />
                     </div>
 
                     {/* ─── Gráfico ─── */}
@@ -636,6 +645,7 @@ const EvolucionDashboard = ({ paciente, fichas, headerActions }) => {
                                     { label: 'Peso',    val: deltaTotal.peso,    unit: ' kg', first: primeraPeso,    last: ultimoPeso    },
                                     { label: 'IMC',     val: deltaTotal.imc,     unit: '',    first: primeraIMC,     last: ultimoIMC     },
                                     { label: 'Cintura', val: deltaTotal.cintura, unit: ' cm', first: primeraCintura, last: ultimaCintura },
+                                    { label: 'Grasa corporal', val: deltaTotal.grasa, unit: '%', first: primeraGrasa, last: ultimaGrasa },
                                 ].map(item => {
                                     const noData     = item.val === null;
                                     const improvement = item.val !== null && item.val < 0;
