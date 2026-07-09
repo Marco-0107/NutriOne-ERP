@@ -298,27 +298,58 @@ textarea.form-input {
   background-color: var(--bg-primary);
 }
 
-/* Sidebar Styling (siempre en modo sandwich: oculta hasta abrir con el botón de menú) */
+/* Sidebar Styling (modo sandwich: comprimida a solo iconos, se expande con el botón de menú) */
 .sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 280px;
-  max-width: 85%;
+  width: 72px;
   height: 100%;
   background-color: var(--bg-secondary);
   border-right: 1px solid var(--border-color);
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  transform: translateX(-100%);
-  transition: transform var(--transition-normal);
-  z-index: 1000;
-  box-shadow: var(--shadow-lg);
+  overflow-x: hidden;
+  transition: width var(--transition-normal);
+  z-index: 10;
 }
 
 .sidebar.sidebar-open {
-  transform: translateX(0);
+  width: 280px;
+}
+
+/* Estado comprimido: solo iconos, todo centrado y sin textos */
+.sidebar:not(.sidebar-open) .sidebar-logo span,
+.sidebar:not(.sidebar-open) .user-info,
+.sidebar:not(.sidebar-open) .nav-link span,
+.sidebar:not(.sidebar-open) .btn-logout span {
+  display: none;
+}
+
+.sidebar:not(.sidebar-open) .sidebar-logo {
+  padding: 24px 0;
+  justify-content: center;
+}
+
+.sidebar:not(.sidebar-open) .sidebar-user {
+  padding: 20px 0;
+  justify-content: center;
+}
+
+.sidebar:not(.sidebar-open) .sidebar-nav {
+  padding: 24px 10px;
+}
+
+.sidebar:not(.sidebar-open) .nav-link {
+  justify-content: center;
+  padding: 12px;
+}
+
+.sidebar:not(.sidebar-open) .sidebar-footer {
+  padding: 20px 10px;
+}
+
+.sidebar:not(.sidebar-open) .btn-logout {
+  justify-content: center;
+  padding: 12px;
 }
 
 .sidebar-logo {
@@ -329,6 +360,7 @@ textarea.form-input {
   font-size: 22px;
   font-weight: 800;
   letter-spacing: -0.5px;
+  white-space: nowrap;
   border-bottom: 1px solid var(--gris-100);
   background: var(--accent-gradient);
   -webkit-background-clip: text;
@@ -397,6 +429,7 @@ textarea.form-input {
   text-decoration: none;
   font-weight: 500;
   font-size: 14px;
+  white-space: nowrap;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
 }
@@ -419,7 +452,7 @@ textarea.form-input {
 }
 
 .sidebar-close-btn {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   position: absolute;
@@ -456,7 +489,7 @@ textarea.form-input {
 }
 
 .sidebar-overlay {
-  display: block;
+  display: none;
   position: fixed;
   inset: 0;
   background: rgba(15, 15, 20, 0.45);
@@ -476,6 +509,7 @@ textarea.form-input {
   font-family: inherit;
   font-size: 14px;
   font-weight: 500;
+  white-space: nowrap;
   border-radius: var(--radius-md);
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -1000,6 +1034,43 @@ textarea.form-input {
 @media (max-width: 768px) {
   .app-container {
     flex-direction: column;
+  }
+
+  /* En móvil la sidebar vuelve a ser drawer: oculta por completo hasta abrir */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    max-width: 85%;
+    height: 100%;
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    z-index: 1000;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebar.sidebar-open {
+    transform: translateX(0);
+    width: 280px;
+  }
+
+  .sidebar:not(.sidebar-open) .sidebar-logo span,
+  .sidebar:not(.sidebar-open) .nav-link span,
+  .sidebar:not(.sidebar-open) .btn-logout span {
+    display: inline;
+  }
+
+  .sidebar:not(.sidebar-open) .user-info {
+    display: flex;
+  }
+
+  .sidebar-close-btn {
+    display: flex;
+  }
+
+  .sidebar-overlay {
+    display: block;
   }
 
   .main-header {
