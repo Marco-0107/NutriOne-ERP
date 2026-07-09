@@ -1280,8 +1280,10 @@ const Calendario = () => {
 											</span>
 											<ChevronDown size={16} color="var(--morado-primario)" style={{ transition: 'transform 0.2s', transform: panelCalculadoraOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
 										</button>
-										{panelCalculadoraOpen && (
-											hasPermission('calculos:ver') ? (
+										{/* Calculadora siempre montada (oculta si el panel está cerrado) para que
+										    el GET alimente la barra de progreso de la minuta sin abrir este panel */}
+										{hasPermission('calculos:ver') ? (
+											<div style={{ display: panelCalculadoraOpen ? 'block' : 'none' }}>
 												<CalculosNutricionales
 													datosBase={{
 														edad: atencionForm.edad,
@@ -1299,7 +1301,9 @@ const Calendario = () => {
 										setObjetivoCalorico(get ? Number(get) : null);
 									}}
 												/>
-											) : (
+											</div>
+										) : (
+											panelCalculadoraOpen && (
 												<div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
 													No tienes permiso para usar la calculadora (<code>calculos:ver</code>).
 												</div>
