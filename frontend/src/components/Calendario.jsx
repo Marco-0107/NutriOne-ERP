@@ -302,7 +302,8 @@ const Calendario = () => {
 		const total = citas.length;
 		const confirmed = citas.filter((event) => event.estado === 'confirmada').length;
 		const pending = citas.filter((event) => event.estado === 'pendiente').length;
-		return { total, confirmed, pending };
+		const completed = citas.filter((event) => event.estado === 'completada').length;
+		return { total, confirmed, pending, completed };
 	}, [citas]);
 
 	const weekLabel = `${formatDate(weekDays[0].date)} - ${formatDate(weekDays[6].date)}`;
@@ -748,7 +749,7 @@ const Calendario = () => {
 					<div style={{ width: '1px', height: '28px', background: 'var(--border-color)' }} />
 					{[
 						{ label: 'Total', value: stats.total, tone: 'var(--morado-primario)' },
-						{ label: 'Confirmadas', value: stats.confirmed, tone: 'var(--bienestar)' },
+						{ label: 'Completadas', value: stats.completed, tone: 'var(--bienestar)' },
 						{ label: 'Pendientes', value: stats.pending, tone: 'var(--advertencia)' },
 					].map((item) => (
 						<div key={item.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '999px', padding: '4px 12px' }}>
